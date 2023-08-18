@@ -1,0 +1,2370 @@
+B1. Code theo chuẩn mực (không code tùy tiện quá) cho ra chức năng đã 
+B2. Sau đó tối ưu cho code ngắn lại 
+
+
+Features 
++ Chat real time - socket - pusher  
++ Mutil auth (hệ thống đăng nhập 2 bảng : user và admin => @guest và @admin => đăng kí @admin trong Kernel.php)
++ OAth2 Google , Facebook (OK)
++ Send Mail (OK)
++ Deploy Laravel to infinity hoặc Railway 
++ Blog
++ Mở rộng tính năng cmt 
+
+
+
+
+
+============================ Note ============================
+- @guest là kiểm tra người dùng đã đăng nhập hay chưa 
+    + đây là 1 role 
+    + nếu 2 role thì sao ? 
+    + đăng nhập bằng 2 bảng admin và user (key : mutilple - authetication)
+
+- Bỏ quá nhiều folder trong vs code thì sẽ làm cho chức năng ctrl + click => di chuyển đến hàm sẽ không hoạt động nữa, 
+    vì nó tìm quá nhiều file 
+
+
+- Bật tắt thanh Debug trong Laravel : 
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>composer require barryvdh/laravel-debugbar --dev
+    + env : APP_DEBUG=true # tắt thanh https://github.com/barryvdh/laravel-debugbar thì chuyển thành false 
+
+
+
+=======================================================================
+
+
+
+Câu lệnh	Mô tả
+composer create-project --prefer-dist laravel/laravel <tên>	Tạo một project Laravel mới
+php artisan serve	Chạy ứng dụng Laravel trên localhost
+php artisan make:migration create_<tên-bảng>_table	Tạo migration mới để tạo bảng trong cơ sở dữ liệu
+php artisan migrate	Chạy migration để tạo bảng trong cơ sở dữ liệu
+php artisan make:model <tên-model>	Tạo model mới
+php artisan make:controller <tên-controller>	Tạo controller mới
+php artisan make:request <tên-request>	Tạo request mới
+php artisan make:middleware <tên-middleware>	Tạo middleware mới
+php artisan make:controller --resource <tên-controller>	Tạo resource controller mới
+php artisan make:factory <tên-factory> --model=<tên-model>	Tạo factory mới
+php artisan make:seeder <tên-seeder>	Tạo seeder mới
+php artisan db:seed	Chạy seeder để điền dữ liệu vào cơ sở dữ liệu
+php artisan make:route <tên-route>	Tạo mới một route
+php artisan key:generate	Tạo một key ứng dụng Laravel
+php artisan migrate:rollback	Xóa bảng trong cơ sở dữ liệu
+
+======================================================================================================
+Dưới đây là danh sách các directive (câu lệnh điều khiển) trong Laravel Blade Template Engine:
+@extends: Được sử dụng để khai báo layout mà view sẽ kế thừa.
+@section và @endsection: Được sử dụng để định nghĩa một section trong view.
+@yield: Được sử dụng để khai báo một điểm gọi (yield) trong layout để các view con có thể đổ nội dung vào.
+@include: Được sử dụng để include một view vào trong view hiện tại.
+@if, @elseif và @else: Sử dụng để kiểm tra điều kiện và hiển thị nội dung tương ứng.
+@isset và @empty: Sử dụng để kiểm tra xem một biến đã được định nghĩa và không rỗng hay không.
+@unless: Tương tự như @if, nhưng kiểm tra điều kiện ngược lại.
+@switch, @case và @default: Cho phép xử lý nhiều trường hợp và chọn một khối nội dung tương ứng dựa trên giá trị của biến.
+@for: Dùng để lặp qua một phạm vi số lần xác định và hiển thị nội dung tương ứng cho mỗi lần lặp.
+@foreach: Dùng để lặp qua một mảng hoặc một collection và hiển thị nội dung tương ứng cho mỗi phần tử.
+@while: Sử dụng để lặp lại một đoạn mã trong khi một điều kiện cụ thể đúng.
+@php và @endphp: Dùng để viết mã PHP trực tiếp trong template.
+@verbatim và @endverbatim: Cho phép hiển thị một đoạn mã nguyên thủy mà không được xử lý như Blade syntax.
+@stack và @push: Được sử dụng để quản lý stack (ngăn xếp) các section trong view.
+@auth và @guest: Được sử dụng để kiểm tra xem người dùng đã đăng nhập hay chưa.
+@error: Sử dụng để hiển thị các thông báo lỗi của validation.
+@csrf: Tạo một hidden input chứa token CSRF (Cross-Site Request Forgery) để bảo vệ form.
+Đây là một số directive phổ biến trong Laravel Blade, có thể giúp bạn xây dựng các template linh hoạt và mạnh mẽ trong ứng dụng Laravel của mình.
+
+
+
+Cách 1 
+public function index()
+{
+    # Nếu mà đã đã đăng nhập thì không vào được trang login nữa . 
+    # Ta cũng có một cách khác đó là đăng kí middleware cho nó  
+    // if(Auth::check()){
+    //     return redirect("dashboard");
+    // }
+    return view('auth.login');
+} 
+
+Cách 2 
+Đầu tiên, hãy tạo một middleware mới bằng cách chạy lệnh artisan:
+go
+Copy code
+php artisan make:middleware RedirectIfAuthenticated
+Mở file middleware vừa tạo (app/Http/Middleware/RedirectIfAuthenticated.php) và chỉnh sửa phương thức handle như sau:
+php
+Copy code
+public function handle($request, Closure $next, $guard = null)
+{
+    if (Auth::guard($guard)->check()) {
+        // Nếu người dùng đã đăng nhập, chuyển hướng đến trang dashboard
+        return redirect()->route('dashboard');
+    }
+
+    // Ngược lại, tiếp tục xử lý request
+    return $next($request);
+}
+Đăng ký middleware trong file app/Http/Kernel.php bằng cách thêm vào thuộc tính $routeMiddleware:
+php
+Copy code
+protected $routeMiddleware = [
+    // ...
+    'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+];
+Bây giờ, bạn có thể sử dụng middleware guest trong các route mà bạn muốn kiểm tra xem người dùng đã đăng nhập hay chưa. Ví dụ:
+php
+Copy code
+Route::get('/login', 'Auth\LoginController@showLoginForm')->name('login')->middleware('guest');
+Route::get('/register', 'Auth\RegisterController@showRegistrationForm')->name('register')->middleware('guest');
+Trong ví dụ trên, middleware guest sẽ được áp dụng cho các route /login và /register, đảm bảo rằng chỉ những người dùng chưa đăng nhập mới có thể truy cập vào các trang này. Nếu người dùng đã đăng nhập, middleware sẽ chuyển hướng người dùng đến trang dashboard.
+
+Lưu ý rằng bạn cần đảm bảo rằng route dashboard đã được đăng ký và middleware auth được sử dụng để bảo vệ trang dashboard.
+
+
+
+
+
+================================================================
++ trong blade thì kiểm tra đã đăng nhập hay chưa bằng @guest 
++ trong web.php (route) thì dùng : middleware(['auth'])
+Route::middleware(['auth'])->group(function () {
+    Route::get('dashboard', [CustomAuthController::class, 'dashboard']);
+    Route::get('signout', [CustomAuthController::class, 'signOut'])->name('signout');
+});
++ trong controller thì dùng : 
+if(Auth::check()){
+    return redirect("dashboard");
+}
+
+
+
+================================================================
++ Notify trong laravel : 
+    + https://github.com/brian2694/laravel-toastr , https://www.souysoeng.com/2021/03/laravel-8x-toastr-notifications-example.html 
+    + use Brian2694\Toastr\Facades\Toastr;
+    
+    + Toastr::info('message', 'title', ['options']);
+    + Toastr::success('message', 'title', ['options']);
+    + Toastr::warning('message', 'title', ['options']);
+    + Toastr::error('message', 'title', ['options']);
+    + Toastr::clear();
+    + Toastr()->info('message', 'title', ['options']);
+
+    + step 
+        + composer require brian2694/laravel-toastr
+        + thêm vào config/app.php
+            + Brian2694\Toastr\ToastrServiceProvider::class,
+            + 'Toastr'  => Brian2694\Toastr\Facades\Toastr::class,
+        + php artisan vendor:publish
+            => chọn số của package laravel-toastr => enter 
+        + thêm vào body của trang web : 
+            <script src="http://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+            <script src="http://cdn.bootcss.com/toastr.js/latest/js/toastr.min.js"></script>
+            {!! Toastr::message() !!}
+        + thêm vào head của trang web : 
+            <link rel="stylesheet" href="http://cdn.bootcss.com/toastr.js/latest/css/toastr.min.css"> 
+
+================================================================
+Login by Google tóm tắt : 
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>composer require laravel/socialite
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>composer require socialiteproviders/google
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php artisan make:migration add_google_id_to_users_table
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\database\migrations\2023_06_29_075104_add_google_id_to_users_table.php
+        <?php
+
+        use Illuminate\Database\Migrations\Migration;
+        use Illuminate\Database\Schema\Blueprint;
+        use Illuminate\Support\Facades\Schema;
+
+        class AddGoogleIdToUsersTable extends Migration
+        {
+            /**
+            * Run the migrations.
+            *
+            * @return void
+            */
+            public function up()
+            {
+                Schema::table('users', function (Blueprint $table) {
+                    $table->string('google_id')->nullable();
+                });
+            }
+
+            public function down()
+            {
+                Schema::table('users', function (Blueprint $table) {            
+                    $table->dropColumn('google_id');
+                });
+            }
+        }
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php artisan migrate
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Models\User.php
+        protected $fillable = [
+            'name', 'email', 'password','google_id'
+        ];
+        => Nhớ thêm vào Model 
+Google API : https://console.cloud.google.com/apis/credentials/oauthclient/1079359168744-ehm0qmfgmg4imvbk33n7d97t69sfjb87.apps.googleusercontent.com
+    Authorized JavaScript origins : http://127.0.0.1:8000
+    Authorized redirect URIs : http://localhost:8000/authorized/google/callback  <====
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\config\services.php
+        'google' => [
+            'client_id' => '1079359168744-ehm0qmfgmg4imvbk33n7d97t69sfjb87.apps.googleusercontent.com',
+            'client_secret' => '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',
+            'redirect' => 'http://localhost:8000/authorized/google/callback',    <==== đây là LINK đăng kí trên google API 
+        ],
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Http\Controllers\CustomAuthController.php
+        // Login by Google 
+        public function redirectToGoogle()
+        {
+            return Socialite::driver('google')->redirect();
+        }
+        public function handleGoogleCallback()
+        {
+            try {
+                $user = Socialite::driver('google')->user();
+                $finduser = User::where('google_id', $user->id)->first();
+                if($finduser){ // nếu đã tồn tại thì cho vào dashboard 
+                    Auth::login($finduser);
+                    return redirect()->intended('dashboard');
+                }else{// nếu chưa thì tạo account 
+                    $newUser = User::create([
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'google_id'=> $user->id,    
+                        'password' => encrypt('123456vanmanh') // mật khẩu mặt định 
+                    ]);
+                    Auth::login($newUser);
+                    return redirect()->intended('dashboard');
+                }
+            } catch (Exception $e) {
+                dd($e->getMessage());
+            }
+        }
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\resources\views\auth\login.blade.php
+        <div class="flex items-center justify-end mt-4">
+            <a href="{{ url('authorized/google') }}">   <=== đây là link ở web.php 
+                <img src="https://developers.google.com/identity/images/btn_google_signin_dark_normal_web.png" style="margin-left: 3em;">
+            </a>
+        </div>
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\routes\web.php
+        Route::get('authorized/google', [CustomAuthController::class, 'redirectToGoogle']); <=== đây là link ở blade nhằm gọi đến hàm trong Controller 
+        Route::get('authorized/google/callback', [CustomAuthController::class, 'handleGoogleCallback']);
+
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Http\Controllers\CustomAuthController.php (update cho phù hợp)
+        // User đăng kí  
+        public function customRegistration(Request $request)
+        {  
+            $request->validate([
+                'name' => 'required',
+                'email' => 'required|email',
+                'password' => 'required|min:6',
+            ]);
+
+            $findEmail = User::where('email', $request->email)->first();
+            if($findEmail){
+                if($findEmail['password']){
+                    Toastr::error('Tài khoản đã tồn tại');
+                    return redirect("register");
+                }
+                else { // chưa có password mà có email thì là tài khoản của google => cập nhật password 
+                    $findEmail->update(['password' => Hash::make($request['password'])]);
+                }
+            }
+            else {
+                $data = $request->all();
+                $user = User::create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'password' => Hash::make($data['password'])
+                ]);
+                Toastr::success('Đăng kí tài khoản thành công !');
+                $this->sendMail($user);
+            }
+            return redirect("dashboard")->withSuccess('You have signed-in');
+        }
+        // Login by Google 
+        public function redirectToGoogle()
+        {
+            return Socialite::driver('google')->redirect();
+        }
+        public function handleGoogleCallback()
+        {
+            try {
+                $user = Socialite::driver('google')->user();
+                $finduser = User::where('google_id', $user->id)->first();
+                if($finduser){ // nếu đã tồn tại thì cho vào dashboard 
+                    Auth::login($finduser);
+                    return redirect()->intended('dashboard');
+                }else{// nếu chưa thì tạo account 
+                    $findEmail = User::where('email', $user->email)->first();
+                    if($findEmail){ // đã có trong hệ thống thì update id 
+                        $findEmail->update(['google_id' => $user->id]);
+                        Auth::login($findEmail); // xác nhận đã login 
+                        Toastr::success('Đăng nhập thành công');
+                    }
+                    else { // chưa có thì tạo tài khoản 
+                        $newUser = User::create([
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'google_id'=> $user->id,    
+                            // 'password' => encrypt('123456vanmanh') // mật khẩu mặt định 
+                        ]);
+                        Auth::login($newUser); // xác nhận đã login 
+                        Toastr::success('Đăng kí thành công');
+                        $this->sendMail($newUser);
+                    }
+                    return redirect()->intended('dashboard');
+                }            
+            } catch (Exception $e) {
+                dd($e->getMessage());
+            }
+        }
+
+=> XONG , sau đó xử lý gì ở Controller cho hợp lý thì xử lý .  
+================================================================
+    login bằng google 
+        + nếu google_id này đã có trong db => cho login vào  
+        + nếu google_id này chưa có trong db 
+            + nếu email này chưa có trong db => tạo tài khoản mới (password để trống)
+            + nếu email này đã có trong db => chỉ cần bổ sung thêm google id 
+            
+    user register 
+        + mail đã tồn tại 
+            + có password => không cho đăng kí nữa 
+            + không có password => đây là tài khoản đăng nhập trước đó bằng google 
+                => lấy password người dùng nhập bổ sung vào  
+        + mail chưa tồn tại => đăng kí như bình thường 
+================================================================
+Login by Github cũng tương tự : Điều quan trọng của một social network là  
+    + Đăng kí 
+        + URL trang web : http://localhost:8000
+        + URL callback  : http://localhost:8000/authorized/google/callback (ghi cái gì cũng được)
+            + link này sẽ xuất hiện 2 chỗ nữa là 
+                + file service.php => đăng kí cho hệ thống 
+                + web.php => gọi hàm xử lý 
+
+    + Sau khi đăng kí thì hệ thống bất kì sẽ trả về cho ta 2 thứ quan trọng 
+        + Client ID : b1b1f3e7c5765cfd3510
+        + Client secrets : 48474a596ae636bba226c9b0f704221f2fcc3bb7 
+        => cộng với URL callback ta đã đăng kí 
+        => 3 thông số này sẽ cho vào file service.php 
+
+Các bước để đăng nhập bằng github (ngắn gọn) 
+    + https://github.com/settings/applications/new
+        Application name : Blog Laravel
+        Homepage URL : http://localhost:8000
+        Authorization callback URL : http://localhost:8000/authorized/github/callback
+    
+    + https://github.com/settings/applications/2246649
+        Client ID : b1b1f3e7c5765cfd3510
+        => Click 'Generate a new client secret' để tạo Client secrets : 48474a596ae636bba226c9b0f704221f2fcc3bb7 (copy lại ngay)
+    
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>composer require laravel/socialite (nếu trước đó đã chạy lệnh này rồi thì thôi)
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>composer require socialiteproviders/github
+
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\config\services.php
+        'github' => [
+            'client_id' => 'b1b1f3e7c5765cfd3510',
+            'client_secret' => '48474a596ae636bba226c9b0f704221f2fcc3bb7',
+            'redirect' => 'http://localhost:8000/authorized/github/callback',
+        ],
+
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\routes\web.php
+        Route::get('authorized/github', [CustomAuthController::class, 'redirectToGithub']);
+        Route::get('authorized/github/callback', [CustomAuthController::class, 'handleGithubCallback']);
+        
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\resources\views\auth\login.blade.php
+        <div style="display: flex;justify-content: center" class="flex items-center justify-end mt-2 mb-4">
+            <a href="{{ url('authorized/github') }}">
+                <img style="width: 200px" src="https://help.dropsource.com/wp-content/uploads/sites/4/2017/02/gh-login-button.png" style="margin-left: 3em;">
+            </a>
+        </div>
+
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Http\Controllers\CustomAuthController.php
+        // Login by Github 
+        public function redirectToGithub()
+        {
+            return Socialite::driver('github')->redirect();
+        }
+        public function handleGithubCallback()
+        {
+            try {
+                $user = Socialite::driver('github')->user();
+                $finduser = User::where('github_id', $user->id)->first();
+                if($finduser){ // nếu đã tồn tại thì cho vào dashboard 
+                    Auth::login($finduser);
+                    return redirect()->intended('dashboard');
+                }else{// nếu chưa thì tạo account 
+                    $findEmail = User::where('email', $user->email)->first();
+                    if($findEmail){ // đã có trong hệ thống thì update id 
+                        $findEmail->update(['github_id' => $user->id]);
+                        Auth::login($findEmail); // xác nhận đã login 
+                        Toastr::success('Đăng nhập thành công');
+                    }
+                    else { // chưa có thì tạo tài khoản 
+                        $newUser = User::create([
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'github_id'=> $user->id,    
+                            // 'password' => encrypt('123456vanmanh') // mật khẩu mặt định 
+                        ]);
+                        Auth::login($newUser); // xác nhận đã login 
+                        Toastr::success('Đăng kí thành công');
+                        $this->sendMail($newUser);
+                    }
+                    return redirect()->intended('dashboard');
+                }            
+            } catch (Exception $e) {
+                dd($e->getMessage());
+            }
+        }
+
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php artisan make:migration add_github_id_to_users_table
+        public function up()
+        {
+            Schema::table('users', function (Blueprint $table) {
+                $table->string('github_id')->nullable();
+            });
+        }
+
+        public function down()
+        {
+            Schema::table('users', function (Blueprint $table) {            
+                $table->dropColumn('github_id');
+            });
+        }
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php artisan migrate
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Models\User.php
+        protected $fillable = [
+            'name', 'email', 'password','google_id','github_id'
+        ];
+
+    ==> XONG . Về cơ bản thì như vậy là ok rồi . Cứ làm giống như Login bằng Google là được . 
+
+================================================================
+    login bằng google 
+        + nếu google_id này đã có trong db => cho login vào  
+        + nếu google_id này chưa có trong db 
+            + nếu email này chưa có trong db => tạo tài khoản mới (password để trống)
+            + nếu email này đã có trong db => chỉ cần bổ sung thêm google id 
+    
+    login bằng github
+        + nếu github_id này đã có trong db => cho login vào  
+        + nếu github_id này chưa có trong db 
+            + nếu email này chưa có trong db => tạo tài khoản mới (password để trống)
+            + nếu email này đã có trong db => chỉ cần bổ sung thêm github id 
+
+    user register 
+        + mail đã tồn tại 
+            + có password => không cho đăng kí nữa 
+            + không có password => đây là tài khoản đăng nhập trước đó bằng mạng xã hội (google hoặc github,...)
+                => lấy password người dùng nhập bổ sung vào  
+        + mail chưa tồn tại => đăng kí như bình thường 
+
+VỀ CỞ BẢN HOÀN TOÀN GIỐNG NHAU , KHÔNG ĐỔI GÌ CẢ , COPY ra và thay vào thôi . 
+CODE CỦA GITHUB hoàn toàn giống GOOLE => Áp dụng cho các mạng xã hội khác 
+
++ Về xử lý maill unique => tưởng phức tạp , tưởng thêm một mạng xã hội thì lại phải xem lại cách xử lý sao maill 
+    thì phải unique còn password khi đăng kí thì phải điền vào còn khi đăng nhập bằng mạng xã hội thì không điền 
+    => thì mấy cái này do mình code ok nên khi thêm một mạng xã hội mới ví dụ github thì chỉ cần cop ra paste vào thôi 
+================================================================
+dd($user) Ta sẽ được : 
+    Laravel\Socialite\Two\User {#417 ▼
+        +token: "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"
+        +refreshToken: null
+        +expiresIn: null
+        +approvedScopes: array:1 [▶]
+        +id: 81563451
+        +nickname: "NguyenVanManh-AI"
+        +name: "Nguyễn Văn Mạnh"
+        +email: "nguyenvanmanh2001it1@gmail.com"
+        +avatar: "https://avatars.githubusercontent.com/u/81563451?v=4"
+        +user: array:32 [▼
+        "login" => "NguyenVanManh-AI"
+        "id" => 81563451
+        "node_id" => "MDQ6VXNlcjgxNTYzNDUx"
+        "avatar_url" => "https://avatars.githubusercontent.com/u/81563451?v=4"
+        "gravatar_id" => ""
+        "url" => "https://api.github.com/users/NguyenVanManh-AI"
+        "html_url" => "https://github.com/NguyenVanManh-AI"
+        "followers_url" => "https://api.github.com/users/NguyenVanManh-AI/followers"
+        "following_url" => "https://api.github.com/users/NguyenVanManh-AI/following{/other_user}"
+        "gists_url" => "https://api.github.com/users/NguyenVanManh-AI/gists{/gist_id}"
+        "starred_url" => "https://api.github.com/users/NguyenVanManh-AI/starred{/owner}{/repo}"
+        "subscriptions_url" => "https://api.github.com/users/NguyenVanManh-AI/subscriptions"
+        "organizations_url" => "https://api.github.com/users/NguyenVanManh-AI/orgs"
+        "repos_url" => "https://api.github.com/users/NguyenVanManh-AI/repos"
+        "events_url" => "https://api.github.com/users/NguyenVanManh-AI/events{/privacy}"
+        "received_events_url" => "https://api.github.com/users/NguyenVanManh-AI/received_events"
+        "type" => "User"
+        "site_admin" => false
+        "name" => "Nguyễn Văn Mạnh"
+        "company" => "DUT-BACH KHOA DA NANG"
+        "blog" => ""
+        "location" => "DA NANG"
+        "email" => "nguyenvanmanh2001it1@gmail.com"
+        "hireable" => null
+        "bio" => null
+        "twitter_username" => "NguyenVanManhft"
+        "public_repos" => 48
+        "public_gists" => 13
+        "followers" => 17
+        "following" => 35
+        "created_at" => "2021-03-29T10:44:36Z"
+        "updated_at" => "2023-06-24T19:58:33Z"
+        ]
+        +attributes: array:5 [▼
+        "id" => 81563451
+        "nickname" => "NguyenVanManh-AI"
+        "name" => "Nguyễn Văn Mạnh"
+        "email" => "nguyenvanmanh2001it1@gmail.com"
+        "avatar" => "https://avatars.githubusercontent.com/u/81563451?v=4"
+        ]
+    }
+    
+
+================================================================
+Build App Chat Realtime 
+    + https://www.youtube.com/watch?v=ER-wOKXrbuw&ab_channel=CodewithRoss 
+    + https://bitbucket.org/rossedlin/chat-laravel-pusher/src/youtube/ 
+    + https://dashboard.pusher.com/apps/1627143/getting_started
+        => chủ yếu là dùng thư viện , nó không liên quan gì database hết 
+        => nếu build trong laravel thì ok , nhưng cần realtime khi có api gửi tới thì không làm được . 
+        => Thêm nữa là lỡ cái này nó tính phí . 
+        + Cái này có một cái lợi đó là chỉ cần chọn frontend và backend là nó tự sinh code cho mình luôn, khá là ok 
+
+    + Đầu từ làm Socket luôn . 
+
+
+================================================================
+https://socialiteproviders.com/about/#provider-issues
+
+php artisan make:model Articles -c -v 
+
+
+================================================================
+Có một cái cực kì hay mà mình đã làm rồi đó là => Đang thiếu , chưa use một class nào đó 
+thì chỉ cần viết class đó ra rồi khi từ cuối cùng => đường dẫn class hiện lên 
+ta chỉ cần 'enter' một cái là laravel tự thêm class đó cho ta 
+CHÚ Ý : Nhưng chú ý là giả sử có nhiều class cùng tên thì nên xem kĩ trước khi enter tránh use nhầm class không cần
+Ví dụ : 
+    + $user = Auth::user();
+    => Auth => enter => tự động có use Illuminate\Support\Facades\Auth; 
+================================================================
+Route . Có 2 cách 
+Cách 1 : Không đặt name cho route 
+    Route::prefix('article')->controller(ArticlesController::class)->group(function () {
+        Route::middleware(['auth'])->group(function () {
+            Route::post('/add', 'addArticle');
+        });
+    });
+
+    thì action trong form sẽ là 
+    <form method="POST" action="/article/add"> 
+
+Cách 2 : Đặt name cho route 
+    Route::prefix('article')->controller(ArticlesController::class)->name('article.')->group(function () {
+        Route::middleware(['auth'])->group(function () {
+            Route::post('/add', 'addArticle')->name('add');
+        });
+    });
+
+    thì action trong form sẽ là 
+    <form method="POST" action="{{ route('article.add') }}"> 
+
+=> nói chung cách nào cũng được , nhưng thấy cách đặt name ok hơn 
+================================================================
+Add Article 
+    C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php artisan make:request RequestArticle
+    C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Http\Requests\RequestArticle.php
+        <?php
+
+            namespace App\Http\Requests;
+
+            use Brian2694\Toastr\Facades\Toastr;
+            use Illuminate\Foundation\Http\FormRequest;
+
+            class RequestArticle extends FormRequest
+            {
+                public function authorize()
+                {
+                    return true;
+                }
+
+                public function rules()
+                {
+                    return [
+                        'title' => 'required|min:6',
+                        'content' => 'required|min:6',
+                    ];
+                }
+
+                public function withValidator($validator)
+                {
+                    if ($validator->fails()) {
+                        foreach ($validator->errors()->all() as $error) {
+                            Toastr::error($error);
+                        }
+                    }
+                }
+            }
+
+    C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Http\Controllers\ArticlesController.php
+        public function addArticle(RequestArticle $request){
+            $request->validated();
+            $data = $request->all();
+            $user = Auth::user();
+            $article = Articles::create([
+                'id_user' => $user->id,
+                'title' => $data['title'],
+                'content' => $data['content'],
+            ]);
+            if ($article) {
+                Toastr::success('Thêm bài viết thành công!');
+                return redirect()->route('article.add'); 
+            } else {
+                Toastr::error('Thêm bài viết thất bại!');
+                return redirect()->back()->withInput(); // Quay trở lại trang trước đó và giữ lại dữ liệu đã nhập
+            }
+        }
+
+Note : 
+    + Nếu muốn in ra được các lỗi thì ta phải tự tạo request cho nó (bằng câu lệnh trên)
+        + nếu dùng request như thông thường như thế này 
+            public function addArticle(Request $request){
+                $request->validated([
+                    'title' => 'required|min:6',
+                    'content' => 'required|min:6',
+                ]);
+
+                dd(1);  <== thì nếu khi gặp lỗi , dòng này sẽ không được in ra 
+                nó kiểm tra nếu có lỗi trong rule thì sẽ chuyển về lại ngay , chứ không thực hiện tiếp
+                
+    + Chính vì thế phải tạo request riêng cho nó => và muốn in ra các lỗi trong rule thì code vào hàm 
+        withValidator như đoạn code trên 
+
+    + Nhắt lại : validated([...]) là một hàm có sẵn của laravel 
+
+Nói thêm : 
+    + Ta có thể tối ưu hơn nữa , in ra lỗi tùy ý bằng cách custom lại error 
+        + Ví dụ rule : require sẽ in ra gì , min:6 sẽ in ra gì ,... 
+        => cái này sẽ code lại sau 
+
+    + return redirect()->route('article.add');  // chuyển đến trang có name route là 'article.add' (chính là của article. + add)
+    + return redirect()->back()->withInput();   // Quay trở lại trang trước đó và giữ lại dữ liệu đã nhập
+    + bên html thì dùng old() để hiển thị lại các giá trị cũ (nếu form lỗi)
+    <input value="{{ old('title') }}" name="title" type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
+
+
+================================================================
+Pagination in Laravel 8 
+    + https://dev.to/codeanddeploy/laravel-8-pagination-example-using-bootstrap-5-243h
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Providers\AppServiceProvider.php
+            <?php
+                namespace App\Providers;
+                
+                use Illuminate\Support\ServiceProvider;
+                use Illuminate\Pagination\Paginator;   <==== 
+                
+                class AppServiceProvider extends ServiceProvider
+                {
+                    public function register()
+                    {
+                    }
+                    public function boot()
+                    {
+                        Paginator::useBootstrap();    <==== 
+                    }
+                }
+    
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Http\Controllers\ArticleController.php
+        public function myArticle(Request $request){
+            $user = Auth::user();
+            $articles = Article::where('id_user', $user->id)->paginate(2);
+            return view('article.MyArticle',['articles' => $articles]);
+        }
+
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\resources\views\article\MyArticle.blade.php
+        + Có 2 cách , cách nào cũng được : 
+        {{ $articles->links() }}
+        {!! $articles->links() !!}
+
+    + Nói thêm : 
+        + npm i jquery
+        + npm install bootstrap@4.0.0
+
+        + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\resources\views\dashboard.blade.php
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+            <link rel="stylesheet" href="http://cdn.bootcss.com/toastr.js/latest/css/toastr.min.css"> 
+
+            <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+            <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>     
+
+
+    + http://localhost:8000/article/my?page=2
+        Illuminate\Pagination\LengthAwarePaginator {#1398 ▼
+            #total: 5
+            #lastPage: 1
+            #items: Illuminate\Database\Eloquent\Collection {#1421 ▶}
+            #perPage: 6
+            #currentPage: 2
+            #path: "http://localhost:8000/article/my"
+            #query: []
+            #fragment: null
+            #pageName: "page"
+            +onEachSide: 3
+            #options: array:2 [▶]
+        }
+        + Thông số của Pagination trong laravel 
+            + perPage : số dòng trên mỗi trang (lấy ra bao nhiêu cái trên mỗi trang)
+            + currentPage : trang hiện tại mà mình đang đứng 
+                + Khi click vào http://localhost:8000/article/my thì nó hiện ra 
+                => khi click vào các trang thì url sẽ tự động thay đổi theo , ví dụ click vào 2 
+                thì ta được : http://localhost:8000/article/my?page=2 
+                => click vào 1,2,3... thì cũng tương tự 
+            + total : tổng số result mà backend lấy ra được 
+            + lastPage : trang trước đó 
+
+        + Từ 2 thông số perPage, currentPage ta có thể lấy ra được index hay số thứ tự 
+        bằng cách : 
+            @foreach ($articles as $index => $article)
+            <tr>
+                <td>{{ $articles->perPage()*($articles->currentPage() -1) + $index + 1 }}</td>
+                <td>{{ $article->title }}</td>
+                <td>{{ $article->content }}</td>
+                <td>{{ $article->content }}</td>
+                <td><button type="button" class="btn btn-primary">Primary</button></td>
+                <td><button type="button" class="btn btn-danger">Danger</button></td>
+            </tr>
+            @endforeach
+        
+        + Thay vì @foreach ($articles as $article) thì để có thêm số thứ tự ta phải : @foreach ($articles as $index => $article)
+
+================================================================
+Eloquent Laravel 8 . As name 
+
+$articles = Article::join('users', 'articles.id_user', '=', 'users.id')
+    // ->select('articles.*', 'users.name') // nếu không có as thì mặc định nó sẽ là name 
+    ->select('articles.*', 'users.name as author') // nếu as thì để đặc tên lại cho nó  
+    ->paginate(2);
+    dd($articles);
+
+#attributes: array:7 [▼
+    "id" => 2
+    "id_user" => 1
+    "title" => "ascsacasc"
+    "content" => "ascascsac"
+    "created_at" => "2023-06-30 16:09:49"
+    "updated_at" => "2023-06-30 16:09:49"
+    "name" => "Nguyen Van Manh"    <=== không đặt tên 
+]
+
+#attributes: array:7 [▼
+    "id" => 2
+    "id_user" => 1
+    "title" => "ascsacasc"
+    "content" => "ascascsac"
+    "created_at" => "2023-06-30 16:09:49"
+    "updated_at" => "2023-06-30 16:09:49"
+    "author" => "Nguyen Van Manh"    <=== đặt lại tên  
+]
+
+LƯU Ý : CÁC TRƯỜNG CÓ TÊN TRÙNG NHAU . Ví dụ 
+$articles = Article::join('users', 'articles.id_user', '=', 'users.id')
+    ->select('articles.*', 'users.id') 
+    ->paginate(2);
+    dd($articles);
+
+=> Ta thấy article cũng có id mà user cũng có trường id => trường id của user sẽ đè lên trường id của 
+    article . Lúc này sẽ không có 7 thuộc tính nữa mà sẽ là 6 thuộc tính thôi 
+        #attributes: array:6 [▼
+            "id" => 1
+            "id_user" => 1
+            "title" => "ascsacasc"
+            "content" => "ascascsac"
+            "created_at" => "2023-06-30 16:09:49"
+            "updated_at" => "2023-06-30 16:09:49"
+        ]
+=> ĐÂY LÀ LÝ DO MÀ CẦN PHẢI DÙNG AS ĐỂ ĐẶT LẠI NAME . NẾU KHÔNG TRÙNG THÌ THÍCH THÌ ĐẶT AS KHÔNG THÌ KHÔNG CŨNG ĐƯỢC . 
+================================================================
+Để lấy thông tin của người đăng nhập ngay trên blade trong Laravel, bạn có thể sử dụng biến toàn cục auth(). 
+Dưới đây là một số ví dụ về cách lấy thông tin người đăng nhập:
+    Lấy thông tin người đăng nhập hiện tại (Instance của Model User):
+        $user = auth()->user();
+    Lấy ID của người đăng nhập:
+        $userID = auth()->id();
+    Kiểm tra xem người dùng có đăng nhập hay không:
+        if (auth()->check()) {
+            // Người dùng đã đăng nhập
+        }
+    Kiểm tra xem người dùng có phải là một vai trò cụ thể hay không:
+        if (auth()->user()->hasRole('admin')) {
+            // Người dùng có vai trò admin
+        }
+    Trong các ví dụ trên, auth() là một trợ giúp để truy cập vào đối tượng Illuminate\Contracts\Auth\Guard, và thông qua đối tượng này, bạn có thể truy cập vào thông tin của người đăng nhập hiện tại.
+    Sau khi lấy thông tin của người đăng nhập, bạn có thể sử dụng nó để hiển thị thông tin tùy ý trong blade. Ví dụ:
+        <p>Welcome, {{ auth()->user()->name }}</p>
+        <p>Email: {{ auth()->user()->email }}</p>
+    Lưu ý rằng để sử dụng auth(), bạn cần chắc chắn rằng đã kích hoạt tính năng xác thực trong ứng dụng Laravel của bạn và đã đăng nhập thành công.
+
++ C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\resources\views\article\Index.blade.php
+@foreach ($articles as $index => $article)
+<tr>
+    <td>{{ $articles->perPage()*($articles->currentPage() -1) + $index + 1 }}</td>
+    <td>{{ $article->title }}</td>
+    <td>{{ $article->content }}</td>
+    <td>{{ $article->name }}</td>
+    <td><button type="button" class="btn btn-primary"><i class="fa-solid fa-eye"></i> View</button></td>
+    @if($article->id_user == auth()->user()->id)
+    <td><button type="button" class="btn btn-primary"><i class="fa-solid fa-pen-to-square"></i> Edit</button></td>
+    <td><button type="button" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Delete</button></td>
+    @endif 
+</tr>
+@endforeach
+================================================================
+Để hiển thị giá trị được truyền về từ controller và vẫn sử dụng old để hiển thị giá trị cũ, 
+bạn có thể sửa code blade như sau:
+<form method="POST" action="{{ route('article.add') }}">
+    @csrf
+    <div class="form-group">
+        <label for="title">Title</label>
+        <input value="{{ old('title', $article->title) }}" name="title" type="text" class="form-control" id="title" aria-describedby="titleHelp" placeholder="Title">
+    </div>
+    <div class="form-group">
+        <label for="content">Content</label>
+        <textarea name="content" class="form-control" id="content" rows="5" placeholder="Content">{{ old('content', $article->content) }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Add</button>
+</form>
+Trong ví dụ trên, chúng ta sử dụng old('field', $value) để hiển thị giá trị cũ của trường và nếu không có giá trị cũ, 
+nó sẽ lấy giá trị từ biến $article được truyền từ controller. Điều này cho phép bạn hiển thị giá trị trước đó nếu có, 
+hoặc giá trị mặc định từ bài viết nếu không có giá trị cũ.
+
+=> Đảm bảo khi mới vào thì hiển thị giá trị được truyền về , còn khi update mà lỗi thì giữ nguyên các giá trị cũ cho người dùng 
+để người dùng tiếp tục chỉnh sửa, chỉ khi lỗi mà người dùng không chỉnh sửa nữa mà request lại thì nó vẫn cứ theo quy tắc như trên 
+là hiển thị các giá trị được truyền về . 
+================================================================
+Delete Article 
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\resources\views\article\Index.blade.php
+    <td>
+        {{-- $article->id là truyền vào route 1 giá trị , còn ['id' => $article->id] là truyền vào nhiều giá trị --}}
+        <form action="{{ route('article.delete', $article->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this article?');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Delete</button>
+        </form>
+    </td>
+    
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Http\Controllers\ArticleController.php
+    Dưới đây là mã code cho hàm deleteArticle trong controller:
+    public function deleteArticle(Request $request, $id)
+    {
+        // Kiểm tra xem người dùng có quyền xóa bài viết hay không
+        // Ví dụ: Chỉ cho phép người tạo bài viết hoặc người có quyền quản trị xóa
+        $article = Article::findOrFail($id); // tìm không thấy bài viết thì về lại 
+        $user = Auth::user();
+        $article = Article::where('id',$request->id)->first();
+        if($user->id == $article->id_user){
+        // if ($request->user()->can('delete', $article)) {
+            // Xóa bài viết
+            $article->delete();
+            Toastr::success('Xóa bài viết thành công !');
+            return redirect()->back();
+        } else {
+            Toastr::error('Bạn không có quyền xóa bài viết !');
+            return redirect()->back();
+        }
+    }
+    Trong ví dụ trên, chúng ta sử dụng findOrFail($id) để tìm bài viết dựa trên id. Sau đó, chúng ta kiểm tra xem người dùng 
+    có quyền xóa bài viết hay không, ví dụ: chỉ cho phép người tạo bài viết hoặc người có quyền quản trị xóa. Nếu người dùng có quyền, 
+    chúng ta xóa bài viết và chuyển hướng về trang trước với thông báo thành công. Nếu người dùng không có quyền, chúng ta chuyển hướng 
+    về trang trước với thông báo lỗi.
+
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\routes\web.php
+    Route::post('/delete/{id}', 'deleteArticle')->name('delete');
+
+================================================================
+Các cách để thêm style , js vào file blade.php
+    => Nói chung là có rất nhiều cách : 
+    
+    + Tham khảo : C:\Users\ADMIN\Downloads\ProLaravel\ProjectLaravel2.html
+
+    vậy @push khác gì so với @section('styles')
+    @push và @section('styles') đều được sử dụng để định nghĩa một phần CSS cho trang. Tuy nhiên, có một số khác biệt giữa hai cách sử dụng này:
+    @section('styles'): Được sử dụng để định nghĩa một phần CSS trong trang hiện tại. Nếu bạn chỉ muốn định nghĩa một phần CSS trong một trang cụ thể, thì @section('styles') là cách tiếp cận đơn giản và trực tiếp.
+    @push: Được sử dụng để thêm nội dung CSS vào một stack (ngăn xếp) CSS được xác định trước đó. Điều này cho phép bạn thêm nhiều đoạn CSS từ nhiều trang hoặc thành phần khác nhau vào cùng một stack. Sau đó, bạn có thể hiển thị tất cả các đoạn CSS đó bằng cách sử dụng @stack trong trang gốc (layout). Điều này giúp quản lý và tổ chức mã CSS một cách linh hoạt và tái sử dụng.
+    Ví dụ:
+    Trang gốc (layout.blade.php):
+    <!-- ...Phần còn lại của layout... -->
+    @stack('styles')
+    
+    Trang blade.php:
+    @extends('layout')
+    
+    @section('content')
+    <div class="col-10 mx-auto">
+        {{-- ...Nội dung hiện tại... --}}
+    </div>
+    @endsection
+    
+    @push('styles')
+    <link rel="stylesheet" href="{{ asset('article/style.css') }}">
+    @endpush
+    Lợi ích của việc sử dụng @push và @stack là bạn có thể quản lý nhiều đoạn CSS từ nhiều trang và thành phần khác nhau và tổ chức chúng vào một ngăn xếp duy nhất để hiển thị trên trang gốc. Điều này giúp tăng tính module và tái sử dụng của mã CSS trong ứng dụng Laravel của bạn.
+================================================================
+So sánh giữa Vuejs và Laravel Balde 
+Vuejs 
+    + File component cha use các file component con 
+    + File cha hay file con đều load dữ liệu lên được 
+    + Route-view
+    + Không load lại trang (dùng view-route)
+    + Ví dụ : 
+        + Route-view 
+            + /article/add
+            + /article/edit 
+        
+        + Đi đến /article => component cha hoạt động => load toàn bộ dữ liệu của component cha + show html của component cha 
+        + Đi đến /article/add => load toàn bộ dữ liệu của component cha , con add và html của cha article và con add 
+        + Tương tự nếu đi đến /article/edit 
+
+
+Laravel 
+    + File blade con extends lại file cha . Ví dụ file cha chứa head và footer , import các link css , js hết 
+    thì các file con add.blade.php , edit.blade.php chỉ chứa phần content còn lại các phần viền khác thì 
+    extends('article') (kế thừa lại của cha) . 
+    + Nó vẫn giống với route-view của Vuejs là 
+    + Load lại trang , mỗi route đều phải load lại trang . Không load lại trang với điều kiện là dùng Ajax . 
+        + Nhưng liên quan đến url thì cũng load lại trang .  
+    + Ví dụ : đến article/add thì cho return view về file add.blade.php và trả về result mà add.blade.php cần 
+        Tương tự đến với article/edit . 
+    + Tuy nhiên : Điểm khác ở đây có nghĩa là 
+        + Vuejs 
+            + article/add/... 
+            => /article sẽ được lấy dữ liệu của nó (result1) 
+            => /add sẽ được lấy thêm dữ liệu (result2)
+            => /... (resultn)
+            => cuối cùng khi truy cập vào article/add/... thì sẽ có được result1,... resultn cùng hiển thị trên trang web 
+            mà chỉ cần phần route nào làm việc của phần route đấy . Nó chỉ xây dựng route để kiếm chỗ để component vào thôi 
+
+        + Laravel 
+            + Đối với Laravel thì khác . Vì mỗi route tương ứng sẽ gọi một hàm , có thể là 1 trong các loại sau 
+                + return trực tiếp về view 
+                + gọi đến 1 hàm trong controller rồi cũng return trực tiếp về view .
+                nghĩa là 1 route dù có bao nhiêu phần CŨNG ĐƯỢC XỬ LÝ 1 LẦN DUY NHẤT 
+                + Chính vì thế mà giả sử  
+                    + article/add/..
+                        + article => cần result1 để hiển thị 
+                        + add => cần result2 để hiển thị 
+                        + /... cần resultn để hiển thị
+
+                    + THÌ file web.php 
+                        Route::get('/article/add/test', 'TestController')->name('test');
+                        hàm TestController() trong controller phải lấy được cả 3 result (reuslt1,result2,resultn) 
+                        rồi sau đó return về view rồi hiển thị ra 
+                        => Lấy dữ liệu 1 lần duy nhất . 
+
+        + Chính vì thế mà trên thực tế 
+            + Mình thấy dự án cũ gần như toàn bộ chỉ extends 2 cấp 
+                + Cấp cha : Master.blade.php chứa các phần định nghĩa css, js như head, footer 
+                + Cấp con : @extends('Admin.Layouts.Master') 
+
+            + Cũng có thể extend đến n cấp trong 2 trường hợp sau 
+                + TH1 : Cấp 1 -> n-1 là những cấp chỉ dùng để định nghĩa css, js như đã nói hoặc 
+                nếu có thì các file này chỉ dùng các biến php thì cũng dùng các giá trị có sẵn 
+                như $auth , $error , $succsess (những biến luôn có trong hệ thống)
+
+                + TH2 : Dữ liệu cấp 1 -> cấp n-1 , các file này yêu cầu có dữ liệu lấy từ database 
+                => các dữ liệu này phải được lấy từ hàm controller của route trỏ đến (file thứ n)
+                (như ví dụ đã nói ở trên) . 
+                    Vấn đề xảy ra khi giả xử có nhiều file a,b,c,... đều extend các file từ (1 - n-1)
+                    => phải code lấy dữ liệu nhiều lần trong cùng 1 hàm controller 
+
+                => Cách giải quyết là . LẤY DỮ LIỆU TỪ FILE 1 -> n-1 ĐƯỢC CODE TRONG CÁC HÀM . 
+                SAU ĐÓ TA CHỈ VIỆC GỌI LẠI HÀM là xong (kiến thức cơ bản). 
+
+                Ví dụ : 
+                    route : .../1/2/3/4/a => controller af()
+                    route : .../1/2/3/4/b => controller bf()
+                    route : .../1/2/3/4/c => controller cf()
+
+                    controller 
+                    1f(){
+                        lấy dữ liệu result1 
+                        return result1 
+                    }
+
+                    2f(){
+                        lấy dữ liệu result2
+                        return result2
+                    }
+
+                    3f(){
+                        lấy dữ liệu result3 
+                        return result3
+                    }
+
+                    4f(){
+                        lấy dữ liệu result4 
+                        return result4
+                    }
+
+                    <!--  -->
+                    af(){
+                        1f()
+                        2f()
+                        3f()
+                        4f()
+                        return view a
+                    }
+
+                    bf(){
+                        1f()
+                        2f()
+                        3f()
+                        4f()
+                        return view b
+                    }
+                    
+                    cf(){
+                        1f()
+                        2f()
+                        3f()
+                        4f()
+                        return view c
+                    }
+
+                Nói chung đây là cách giải quyết mà đơn giản nhất , chỉ sử dụng kiến thức cơ bản 
+                đó là dùng lại hàm . 
+                => Với các này có thể giải quyết kế thừa nhiều cấp . 
+                    
+    + Laravel so với Vuejs ngoài khác ở đặc điểm chỉ lấy dữ liệu 1 lần do chỉ return về 1 cái gì đó đối với 1 route 
+        khác với Vuejs nó phần route thành các đoạn , ứng với mỗi đoạn thì thực thi các component tương  ứng với đoạn đó 
+    + Thì chúng vẫn có điểm chung đó là route nào thì hiển thị html của route đấy 
+
+        + article/add 
+        + article/edit 
+
+        + Vuejs 
+            + component article use add, edit 
+        + Laravel 
+            + add.blade.php, edit.blade.php extends article.blade.php 
+
+        + Tất cả đều 
+            + vào article/add thì hiển thị add 
+            + vào article/edit  thì hiển thị edit  
+        
+        => LÀM ĐƯỢC NHIỀU THỨ . (Tab load content, right bar, phân trang,... )
+
+
+    + Ví dụ : 
+        C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\resources\views\organize\test.blade.php
+            @extends('article.Index')
+            @section('content-test')
+            <div>
+                HEHEH 
+            </div>
+            @endsection
+
+            + test extends 'article.Index' , trong 'article.Index' có @yield('content-test')
+                Và article.Index @extends('dashboard') , trong dashboard có @yield('content-article') 
+            + article.Index cần có biến $articles để hiển thị dữ liệu 
+
+
+        + Nếu code ntn thì không được : 
+            public function test(Request $request){
+                return view('organize.test');
+            }
+
+        + Phải là : 
+            public function test(Request $request){
+                $articles = Article::join('users', 'articles.id_user', '=', 'users.id')
+                ->select('articles.*', 'users.name')
+                ->orderBy('articles.id', 'desc')
+                ->paginate(2);
+                return view('organize.test',['articles' => $articles]);
+            }
+
+            + Tối ưu lại để dùng lại hàm bằng cách : 
+            public function getArticle(){
+                $articles = Article::join('users', 'articles.id_user', '=', 'users.id')
+                ->select('articles.*', 'users.name')
+                ->orderBy('articles.id', 'desc')
+                ->paginate(2);
+                return $articles;
+            }
+
+            public function test(Request $request){
+                $articles = $this->getArticle();
+                return view('organize.test',['articles' => $articles]);
+            }
+
+TUY NHIÊN MÌNH SẼ TIẾP TỤC TÌM HIỂU XEM CÓ CÁCH THAY ĐỔI , CÁCH CODE NÀO KHÁC ĐỂ OK HƠN KHÔNG 
+(KHỎE NHƯ LÀ BÊN VUEJS)
+================================================================
+Layout Blade : https://laravel.com/docs/8.x/blade#blade-directives
+    + @push @stack @section @yield @extends @include @parent @show và tổ chức code js css  
+    + Tham khảo : 
+        C:\Users\ADMIN\Downloads\izisoft\p12nhadatexpress\resources\views\Admin\Layouts\Master.blade.php
+        C:\Users\ADMIN\Downloads\izisoft\p12nhadatexpress\resources\views\Admin\MailBox\MasterMail.blade.php
+        C:\Users\ADMIN\Downloads\izisoft\p12nhadatexpress\resources\views\user\layouts\master.blade.php
+        C:\Users\ADMIN\Downloads\izisoft\p12nhadatexpress\resources\views\Home\Layouts\Master.blade.php
+        C:\Users\ADMIN\Downloads\izisoft\p12nhadatexpress\resources\views\user\persolnal\master.blade.php
+    
+    + Trong project thực tế , mình thấy các file css được import vào ở file master . 
+        + Đều này có nghĩa là toàn bộ phần extends master đó sẽ chịu ảnh hưởng bởi file này 
+            => nếu đặt class hoặc id trùng nhau thì dễ gây bug css (style không như ý)
+        + Nên mình nghĩ vừa đặt hết vào master nhưng cũng vừa đặt ở từng file blade.php nhỏ 
+        vì đặt ở các file này thì chỉ nó chịu ảnh hưởng và các file con của nó chịu ảnh hưởng . 
+        Còn đặt ở file master thì lớn quá, sợ các file khác cũng bị ảnh hưởng . 
+
+    ================================================================
+    + @extends và @yield 
+        + Dùng nhiều 
+        + Kế thừa một file cha . Và các vấn đề khi kế thừa (thiếu result này kia thì mình đã nói ở trên)
+        + Ví dụ : 
+            + file cha : dashboard.blade.php 
+                ...
+                @yield('content-artilce')   
+                ...
+
+            + file con : artilce.blade.php 
+                @extends('dashboard')
+                @section('content-artilce')
+                    ...
+                @endsection 
+
+        + Có thể kế thừa n cấp : 
+            + file cha : dashboard.blade.php 
+                ...
+                @yield('content-artilce')   
+                ...
+
+            + file con : artilce.blade.php 
+                @extends('dashboard')
+                @section('content-artilce')
+                    ...
+                    @yield('content-show')   
+                    ...
+                @endsection 
+
+            + file cháu : show.blade.php 
+                @extends('artilce')
+                @section('content-show')
+                    ...
+                @endsection 
+
+    ================================================================
+    + @include
+        + Dùng nhiều 
+        + Nhúng một đoạn code của file khác vào file hiện tại . 
+        + Ví dụ : 
+            header.blade.php : 
+                <header>
+                    <h1>Welcome to My Website</h1>
+                </header>
+
+            home.blade.php : 
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>My Website</title>
+                </head>
+                <body>
+                    @include('header')
+                    <main>
+                        <h2>Home Page</h2>
+                        <p>This is the home page of my website.</p>
+                    </main>
+                </body>
+                </html>
+
+        + Truyền biến về khi nhúng . Giống với prop trong Vuejs 
+            + Ở controller lấy ra 1 cục result thật to 
+            + file cha 
+                @include('view.name', ['status' => $complete])
+                    => file cha include (dùng) file con (view.name) và truyền vào biến cho nó 
+                    (cái này cũng giống như prop trong vuejs)
+                    => với cách làm này ta có thể gọi controller cho file cha , lấy toàn bộ result cần 
+                    file ông ----- file cha ----- file con 
+                    + bằng cách truyền biến về thì file ông sẽ có các result để hiển thị 
+                    + còn file cha thì tất nhiên cũng có , còn file con thì được file cha truyền vào thông qua câu lệnh như trên 
+                    hoặc có thể cũng được truyền trực tiếp từ controller về , ví dụ như thế này : 
+                    return view('file_cha',['result_ong' => $result_ong,'result_cha' => $result_cha,'result_con' => $result_con]);
+
+    ================================================================
+    + @parent | @section('') @show | @section('') @endsection
+        + @section('') @show : Đánh dấu đoạn code file cha , dùng cho file cha 
+        + @section('') @endsection : Đánh dấu đoạn code file con , dùng cho file con 
+        + @parent : Dùng cho file con , để hiển thị phần nội dung của file cha . 
+            + VỊ TRÍ ĐẶT LÀ TRONG CẶP @section('') @endsection TƯƠNG ỨNG CỦA FILE CON . 
+
+        + Tóm lại chức năng là đè một phần nội dung của file cha và có thể hiển thị thêm phần nội dung của file cha 
+        + Có thể có nhiều cặp @section('') @endsection trong một file , không vấn đề gì cả . 
+
+        + Ví dụ : 
+            + Ở tất cả các ví dụ dưới thì @yield('content-test') và @section('content-test') thực hiện chức năng 
+            hiển thị nội dung của file con , như đã nói trong 1 file có nhiều cặp @section('') @endsection không 
+            vấ đề gì cả , cái nào thực hiện chức năng của cái đấy . Mình chỉ thêm vào cho sinh động thôi . 
+
+            + TH1 : 
+                views\article\Index.blade.php : 
+                    @extends('dashboard')
+                    @section('content')
+                        @yield('content-test') 
+                        @section('content-vanmanh')
+                            <h1>NAME</h1>
+                        @show
+                    @endsection
+
+                views\organize\test.blade.php
+                    @extends('article.Index')
+                    @section('content-test')
+                        <div> TEST </div>
+                    @endsection
+
+                + Kết quả : 
+                    TEST
+                    NAME
+
+                + Nhận xét : 
+                    + Trong file con không có @section('content-vanmanh') nên không ghi đè gì cả nên nội dung mặc định của 
+                        @section('content-vanmanh') trong file cha vẫn được hiển thị 
+                    + file cha @yield('content-test') trước nên tất nhiên 'TEST' phải nằm trước 'NAME' 
+
+            + TH2 : 
+                views\article\Index.blade.php : 
+                    @extends('dashboard')
+                    @section('content')
+                        @yield('content-test') 
+                        @section('content-vanmanh')
+                            <h1>NAME</h1>
+                        @show
+                    @endsection
+
+                views\organize\test.blade.php
+                    @extends('article.Index')
+                    @section('content-test')
+                        <div> TEST </div>
+                    @endsection
+                    @section('content-vanmanh')
+                        <div> NGUYENVANMANH </div>
+                        <div> PRO VIP </div>
+                    @endsection
+
+                + Kết quả : 
+                    TEST
+                    NGUYENVANMANH
+                    PRO VIP
+                    
+                + Nhận xét : 
+                    + Trong file con có @section('content-vanmanh') nên ghi đè nội dung mặc định 
+                        của @section('content-vanmanh') trong file cha 
+
+            + TH3 : 
+                views\article\Index.blade.php : 
+                    @extends('dashboard')
+                    @section('content')
+                        @yield('content-test') 
+                        @section('content-vanmanh')
+                            <h1>NAME</h1>
+                        @show
+                    @endsection
+
+                views\organize\test.blade.php
+                    @extends('article.Index')
+                    @section('content-test')
+                        <div> TEST </div>
+                    @endsection
+                    @section('content-vanmanh')
+                        <div> NGUYENVANMANH </div>
+                            @parent 
+                        <div> PRO VIP </div>
+                    @endsection
+
+                + Kết quả : 
+                    TEST
+                    NGUYENVANMANH
+                    NAME
+                    PRO VIP
+                    
+                + Nhận xét : 
+                    + Trong file con có @section('content-vanmanh') nên ghi đè nội dung mặc định 
+                        của @section('content-vanmanh') trong file cha 
+                    + Trong file con có sử dụng @parent TRONG CẶP @section('content-vanmanh') CỦA FILE CON 
+                        => NÊN HIỂN THỊ THÊM PHẦN NỘI DUNG NÀY CỦA FILE CHA  
+                        @section('content-vanmanh') <===
+                            <div> NGUYENVANMANH </div>
+                                @parent <===  
+                            <div> PRO VIP </div>
+                        @endsection <===
+
+        + Có nơi nói 2 cặp : @section('') @show và @section('') @endsection là như nhau . 
+            => Nhưng cứ dùng theo quy tắt như mình đã nói là được rồi . 
+
+    ================================================================
+    @push @stack và nhúng link, script trực tiếp vào file . Có 3 cách như sau :  
+        + @push @stack (đặt ở vị trí tùy ý)
+        + Nhúng link, script trực tiếp vào file (chú ý nên nhúng link trong cặp thẻ @section)
+        + Thêm trực tiếp đoạn code css,js vào file (chú ý nên code trong cặp thẻ @section)
+
+        Quy tắc : 
+            + Tất cả 3 cách trên đều tuân theo những quy tắc sau : Ví dụ file Cha có 2 file con là Con1 và Con2  
+            + js,css của file cha ảnh hưởng đến tất cả các file con (Con1, Con2) đều chịu ảnh hưởng 
+                (dù là dùng @push @stack hay nhúng link hay code trực tiếp)
+            + js,css của file Con1 hoàn toàn không liên quan đến file Con2 (dù là dùng @push @stack hay nhúng link hay code trực tiếp)
+
+            + Các file js,css thường ở folder public . Thêm đường dẫn thì dùng asset('') 
+                Ví dụ :
+                    <link rel="stylesheet" href="{{ asset('css/article/all.css') }}">
+                        + Ta có file public/css/article/all.css
+                    <script src="{{ asset('js/article/search-all.js') }}"></script> 
+                        + Ta có file public/js/article/search-all.js
+
+
+        + TH1 : Thêm trực tiếp đoạn code css,js vào file (chú ý nên code trong cặp thẻ @section)
+            + Đơn giản thì ta chỉ việc code vào thôi . Khi code thuần ta cũng đã biết là có thể bỏ đoạn code css,js 
+                vào bất cứ đâu trong body . Thì bây giờ nó vẫn thế thôi . Bản chất nó vẫn vậy vì nó @extends('dashboard') rồi . 
+
+            @extends('dashboard')
+            @section('content')
+
+                ... code ... 
+
+                <style>
+                    * {
+                        border: 1px solid pink;
+                    }
+                </style>
+                <script>
+                    console.log('Ngay tại Index');
+                </script> 
+            @endsection
+        
+
+        + TH2 : Nhúng link, script trực tiếp vào file (chú ý nên nhúng link trong cặp thẻ @section)
+            @extends('dashboard')
+            @section('content')
+
+                ... code ... 
+
+                <script src="{{ asset('js/article/search-all.js') }}"></script>
+                <link rel="stylesheet" href="{{ asset('css/article/all.css') }}">
+            @endsection
+        
+        + TH3 : @push @stack 
+            + Cách dùng : 
+                + @stack thường để ở file master . Tùy vào code css hay js mà để @stack ở head hay body 
+                + @push để tùy ý ở file con . Chứa code css, js . 
+                    + Trong @push có thể : Code trực tiếp vào đó hoặc Nhúng link 
+
+            + Ta đã có @extends() @section @yield @include @parent @show để chủ yếu là quản lý code html 
+            + Bây giờ ta dùng @push @stack để quản lý code css,js 
+            + Có thời gian thì thử test xem dùng @section để quản lý code css,js và @push @stack để quản lý code html 
+
+            + Ví dụ : 
+                + views\dashboard.blade.php : ĐÂY LÀ FILE MASTER (chứa head và body của trang web)
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+
+                        ...
+
+                        @stack('styles-test') <=== 
+
+                    </head>
+                    <body>
+                        
+                        ...
+
+                        @yield('content')
+                        @stack('scripts-test') <=== 
+
+                    </body>
+                    </html> 
+        
+                + views\organize\test.blade.php : ĐÂY LÀ FILE CẦN @PUSH ĐOẠN CODE . KHÔNG QUAN TÂM @extends qua bao nhiêu cấp . 
+                    @extends('article.Index')
+                    @section('content-test')
+                    @endsection
+                    @push('styles-test') <=== 
+                        <style>
+                            * {
+                                background-color: green;
+                            }
+                        </style> 
+                    @endpush
+
+                    @push('scripts-test') <=== 
+                        <script>
+                            console.log('Hello');
+                            var vanmanh = window.document.getElementById('vanmanh');
+                            vanmanh.onclick = function(){
+                                vanmanh.style.display = 'none';
+                            }
+                        </script> 
+                    @endpush
+
+            + Ví dụ : 
+                + views\dashboard.blade.php : ĐÂY LÀ FILE MASTER (chứa head và body của trang web)
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+
+                        ...
+
+                        @stack('styles-test') <=== 
+
+                    </head>
+                    <body>
+                        
+                        ...
+
+                        @yield('content')
+                        @stack('scripts-test') <=== 
+
+                    </body>
+                    </html> 
+        
+                + views\organize\test.blade.php : ĐÂY LÀ FILE CẦN @PUSH ĐOẠN CODE . KHÔNG QUAN TÂM @extends qua bao nhiêu cấp . 
+                    @extends('article.Index')
+                    @section('content-test')
+                    @endsection
+                    @push('styles-test') <=== 
+                        <link rel="stylesheet" href="{{ asset('css/article/styles-test.css') }}">
+                    @endpush
+
+                    @push('scripts-test') <=== 
+                        <script src="{{ asset('js/article/scripts-test.js') }}"></script>
+                    @endpush
+
+
+        + Ví dụ : 
+            views\dashboard.blade.php : 
+                <!DOCTYPE html>
+                <html>
+                <head>
+
+                    ...
+
+                    @stack('styles-test') <===
+                    @stack('styles-test222') <===
+                    @stack('styles-index') <===
+
+                </head>
+                <body>
+                    
+                    ...
+
+                    @yield('content')
+                    @stack('scripts-test') <===
+                    @stack('scripts-test222') <===
+                    @stack('scripts-index') <===
+
+                </body>
+                </html>
+
+            => FILE NÀO CẦN @PUSH CODE VÀO THÌ CỨ THÊM VÀO THÔI . KHÔNG QUAN TÂM GÌ CẢ . 
+
+================================================================
+Blog 
+background-image: url("{{asset('Blog/image/login.jfif')}}");
+
+
+================================================================
+Users : 
+    + id 
+    + email 
+    + password
+    + name 
+    + google_id 
+    + github_id 
+
+    + username (user + google_id)(user + github_id)  
+        + khi login bằng google thì dùng cách đó để điền username 
+        + còn nếu register thì lấy username ghi đè lên username đã được thêm khi đăng kí bằng google hay github 
+        + tất nhiên khi register thì check nếu đã tồn tại username đó rồi (không phải của email này)
+            thì không được đăng kí .  
+
+    + avatar   (gooogle.avatar)(github.avatar) (có thể null nếu login bằng google)
+    + gender (có thể null nếu login bằng google)
+
+    + Khi hiển thị ảnh ra thì check nếu avatar null thì dùng ảnh của hệ thống . 
+
+    @if($user.avatar==null){
+        url = asset('...')
+        (nếu không có thì lấy ảnh mặt định của hệ thống)
+    }
+    else {
+        url = https://...
+    } 
+
+    + Khi register mà trùng email thì 
+        + lấy username 
+        + lấy gender điền vào 
+        + lấy avatar điền vào 
+        + lấy password điền vào 
+
+
+
+Google : 
+Laravel\Socialite\Two\User {#444 ▼
+    +token: "ya29.a0AbVbY6Nf6aO2u2vfgTp236PwA1FJMpjnicIyDAn1KJcnped9Lv2568Mws0iEmDo30LjEMfzgF8IQimsvvEmmm-jVnlVDsyWOqdvP002EBpPCK1KVHp5NyF9wfeeQUzrWSYR0IgCqUGmDUKT_Atrzt99h2 ▶"
+    +refreshToken: null
+    +expiresIn: 3598
+    +approvedScopes: array:3 [▶]
+    +id: "109722727162244891904"
+    +nickname: null
+    +name: "Mạnh Nguyễn Văn"
+    +email: "nguyenvanmanh2001it1@gmail.com"
+    +avatar: "https://lh3.googleusercontent.com/a/AAcHTteoFwSmeDt4cJE__GhXEw0CzW6QtPvNLtYVwuEVRp3YeA=s96-c"
+    +user: array:11 [▼
+      "sub" => "109722727162244891904"
+      "name" => "Mạnh Nguyễn Văn"
+      "given_name" => "Mạnh"
+      "family_name" => "Nguyễn Văn"
+      "picture" => "https://lh3.googleusercontent.com/a/AAcHTteoFwSmeDt4cJE__GhXEw0CzW6QtPvNLtYVwuEVRp3YeA=s96-c"
+      "email" => "nguyenvanmanh2001it1@gmail.com"
+      "email_verified" => true
+      "locale" => "vi"
+      "id" => "109722727162244891904"
+      "verified_email" => true
+      "link" => null
+    ]
+    +attributes: array:6 [▼
+      "id" => "109722727162244891904"
+      "nickname" => null
+      "name" => "Mạnh Nguyễn Văn"
+      "email" => "nguyenvanmanh2001it1@gmail.com"
+      "avatar" => "https://lh3.googleusercontent.com/a/AAcHTteoFwSmeDt4cJE__GhXEw0CzW6QtPvNLtYVwuEVRp3YeA=s96-c"
+      "avatar_original" => "https://lh3.googleusercontent.com/a/AAcHTteoFwSmeDt4cJE__GhXEw0CzW6QtPvNLtYVwuEVRp3YeA=s96-c"
+    ]
+  }
+
+Github : 
+Laravel\Socialite\Two\User {#431 ▼
+    +token: "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"
+    +refreshToken: null
+    +expiresIn: null
+    +approvedScopes: array:1 [▶]
+    +id: 81563451
+    +nickname: "NguyenVanManh-AI"
+    +name: "Nguyễn Văn Mạnh"
+    +email: "nguyenvanmanh2001it1@gmail.com"
+    +avatar: "https://avatars.githubusercontent.com/u/81563451?v=4"
+    +user: array:32 [▼
+      "login" => "NguyenVanManh-AI"
+      "id" => 81563451
+      "node_id" => "MDQ6VXNlcjgxNTYzNDUx"
+      "avatar_url" => "https://avatars.githubusercontent.com/u/81563451?v=4"
+      "gravatar_id" => ""
+      "url" => "https://api.github.com/users/NguyenVanManh-AI"
+      "html_url" => "https://github.com/NguyenVanManh-AI"
+      "followers_url" => "https://api.github.com/users/NguyenVanManh-AI/followers"
+      "following_url" => "https://api.github.com/users/NguyenVanManh-AI/following{/other_user}"
+      "gists_url" => "https://api.github.com/users/NguyenVanManh-AI/gists{/gist_id}"
+      "starred_url" => "https://api.github.com/users/NguyenVanManh-AI/starred{/owner}{/repo}"
+      "subscriptions_url" => "https://api.github.com/users/NguyenVanManh-AI/subscriptions"
+      "organizations_url" => "https://api.github.com/users/NguyenVanManh-AI/orgs"
+      "repos_url" => "https://api.github.com/users/NguyenVanManh-AI/repos"
+      "events_url" => "https://api.github.com/users/NguyenVanManh-AI/events{/privacy}"
+      "received_events_url" => "https://api.github.com/users/NguyenVanManh-AI/received_events"
+      "type" => "User"
+      "site_admin" => false
+      "name" => "Nguyễn Văn Mạnh"
+      "company" => "DUT-BACH KHOA DA NANG"
+      "blog" => ""
+      "location" => "DA NANG"
+      "email" => "nguyenvanmanh2001it1@gmail.com"
+      "hireable" => null
+      "bio" => null
+      "twitter_username" => "NguyenVanManhft"
+      "public_repos" => 48
+      "public_gists" => 13
+      "followers" => 17
+      "following" => 35
+      "created_at" => "2021-03-29T10:44:36Z"
+      "updated_at" => "2023-06-24T19:58:33Z"
+    ]
+    +attributes: array:5 [▼
+      "id" => 81563451
+      "nickname" => "NguyenVanManh-AI"
+      "name" => "Nguyễn Văn Mạnh"
+      "email" => "nguyenvanmanh2001it1@gmail.com"
+      "avatar" => "https://avatars.githubusercontent.com/u/81563451?v=4"
+    ]
+  }
+
+
+================================================================
+Upload file 
+    + <form method="POST" action="{{ route('register.user')}}" enctype="multipart/form-data">
+        => nhớ thêm : enctype="multipart/form-data"
+    + php artisan storage:link
+    + config\filesystems.php
+        'public' => [
+            'driver' => 'local',
+            // 'root' => storage_path('app/public'),
+            'root' => public_path('storage'),
+            'url' => env('APP_URL').'/storage',
+            'visibility' => 'public',
+        ],
+    + $data = $request->all(); // lấy toàn bộ form input được gửi lên 
+    + Lưu file  
+        if ($request->hasFile('avatar')) {
+            $image = $request->file('avatar');
+            $filename = time() . '.' . $image->getClientOriginalExtension();
+            $image->storeAs('public/Blog/image/avatars', $filename);
+        }
+    + Ảnh : http://localhost:8000/storage/Blog/image/avatars/1688417972.jpg
+    + Nhớ tất cả các form đều phải thêm @csrf 
+
+Tham khảo : https://stackoverflow.com/questions/48510683/laravel-how-to-revert-local-storage-symlink-and-refresh 
+- Fix lỗi không upload được ảnh vào folder public/storage 
+=> không vì gì cả , không vì code . Sau một khoảng thời gian thì ta nên 
+xóa folder : E:\E\Laravel Vuejs\SourceCodePBL4\SourceCodePBL4\API-Laravel\public\storage đi (nếu không xóa thì không chạy lại lệnh được) 
+sau đó chạy lại lệnh : php artisan storage:link
+E:\E\Laravel Vuejs\SourceCodePBL4\SourceCodePBL4\API-Laravel>php artisan storage:link
+The [E:\E\Laravel Vuejs\SourceCodePBL4\SourceCodePBL4\API-Laravel\public\storage] link has been connected to [E:\E\Laravel Vuejs\SourceCodePBL4\SourceCodePBL4\API-Laravel\storage\app/public].
+The links have been created.
+Thì toàn bộ ảnh của folder : E:\E\Laravel Vuejs\SourceCodePBL4\SourceCodePBL4\API-Laravel\storage\app\public
+sẽ được đồng bộ qua folder public/storage 
+File : E:\E\Laravel Vuejs\SourceCodePBL4\SourceCodePBL4\API-Laravel\config\filesystems.php
+        'public' => [
+            'driver' => 'local',
+            // 'root' => storage_path('app/public'),
+            'root' => public_path('storage'),
+            'url' => env('APP_URL').'/storage',
+            'visibility' => 'public',
+        ],
+
+Tắt project và chạy lại là đảm bảo được . 
+================================================================
+HÀM CHECK LOGIN TỰ ĐỘNG 
+$credentials = $request->only('email', 'password');
+    LƯU Ý : ĐỐI VỚI HÀM $credentials = $request->only('email', 'password'); 
+    thì chỉ được ghi cố định là ('email', 'password'); => không được ghi khác chính vì thế mà bên form html . 
+    Dù có thể là username hoặc email nhưng mà vẫn phải đặt name="email" để qua bên này lấy . 
+
+================================================================
++ Làm chức năng quên mật khẩu (bằng gửi link chứa token hoặc mã đến mail)(Lưu token hoặc mã vào database)
+    + table 
+        + email 
+        + code hoặc token 
+
+================================================================
+Điều gì khiến model này liên kết với table users ở database : <?php
+    namespace App\Models;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Model;
+    class Article extends Model
+    {
+        use HasFactory;
+        protected $fillable = [
+            'id', 'id_user', 'title', 'content'
+        ];
+    }
+
+ChatGPT 
+    Trong Laravel, khi một model được tạo và kế thừa từ lớp Illuminate\Database\Eloquent\Model, Laravel ánh xạ model đó với một bảng trong cơ sở dữ liệu. Mặc định, Laravel sẽ giả định rằng tên của bảng tương ứng với tên của model theo quy tắc chữ thường và số nhiều.
+    Trong trường hợp của model Article trong đoạn mã mẫu của bạn, Laravel sẽ liên kết model này với bảng articles trong cơ sở dữ liệu. Nếu tên bảng không tuân theo quy tắc này, bạn có thể chỉ định tên bảng bằng cách sử dụng thuộc tính protected $table trong model. Ví dụ:
+    protected $table = 'my_articles';
+    Ngoài ra, Laravel sẽ giả định rằng khóa chính (primary key) của bảng là cột có tên là id. Nếu tên cột khóa chính của bảng khác với quy tắc này, bạn có thể chỉ định tên cột khóa chính bằng cách sử dụng thuộc tính protected $primaryKey trong model. Ví dụ:
+    protected $primaryKey = 'article_id';
+    Trong trường hợp model Article của bạn, khi tạo một instance của model và thực hiện các thao tác truy vấn như tìm kiếm, lưu trữ, cập nhật, xóa dữ liệu, Laravel sẽ sử dụng bảng users trong cơ sở dữ liệu và các cột id, id_user, title, content tương ứng với các thuộc tính $fillable trong model để thao tác với dữ liệu trong bảng đó.
+
+=> Các Model đặt tên theo quy tắc => sẽ được tự đông ánh xạ với các table trong database 
+    + Ví dụ : 
+        + Article sẽ được ánh xạ với articles
+        + User sẽ được ánh xạ với users
+=> Nếu các table không có Model thì ta có thể liên kết giữa Model và table trong database bằng cách : 
+    thêm vào class trong Model 
+        protected $table = 'my_articles';
+
+
+CHỨC NĂNG QUÊN MẬT KHẨU : 
+    + Trong Laravel có thiết kế thêm chức năng quên mật khẩu : https://laravel.com/docs/10.x/passwords
+    + Nhưng ta cũng có thể tự làm cái này cũng được . 
+
+    + Đã có sẵn table : password_resets 
+        + 	email	token	created_at	
+    => chưa có Model thì đi tạo 
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php artisan make:model PasswordReset
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Models\PasswordReset.php
+        <?php
+            namespace App\Models;
+            use Illuminate\Database\Eloquent\Factories\HasFactory;
+            use Illuminate\Database\Eloquent\Model;
+            
+            class PasswordReset extends Model
+            {
+                use HasFactory;
+                protected $table = 'password_resets';
+                protected $fillable = [
+                    'email', 'token', 'created_at'	
+                ];
+            }
+    
+    + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php artisan make:mail ForgotPassword
+    + Thêm cột id vào cho table 
+        + Nếu không có cột id thì Không dùng first() hay firstOrFail hay firstOrCreate , updateOrCreate gì được hết . 
+            thêm vào thì dùng bình thường . 
+================================================================
+Bootstrap 4 Float Label
+    + https://github.com/tonycorporated/bootstrap-float-label
+    + <link rel="stylesheet" href="https://cdn.rawgit.com/tonystar/bootstrap-float-label/v4.0.2/bootstrap-float-label.min.css"/>
+    + code 
+        <label class="form-group has-float-label">
+            <input class="form-control" type="email" placeholder="email@example.com"/>
+            <span>Email</span>
+        </label>
+
+================================================================
+https://stackoverflow.com/questions/37928998/how-to-use-a-jquery-plugin-inside-vue
+
+================================================================
+use RichTextEditor in HTML CSS JS  
+    + https://richtexteditor.com/
+        => Download thư viện sau đó giải nén ra và lấy các file css, js cần thiết như ở dưới 
+        => Vào https://richtexteditor.com/docs/ => Javascript Method List để xem các hàm xử lý 
+        => Gần như ta chỉ dùng hàm .getHTMLCode() để lấy code được render ra thôi 
+    + Mà tốt hơn hết thì cứ giải nén ra rồi cho toàn bộ folder richtexteditor vào dự án của mình
+        + Lý do là lỡ trong 3 file này nó lại import file khác có trong folder nữa thì nếu mà ta chỉ lấy ra 3 file đó 
+        thôi thì false.  
+
+    + Code :  
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Rich Text Editor Demo</title>
+            <link rel="stylesheet" href="richtexteditor/rte_theme_default.css" />
+            <script type="text/javascript" src="richtexteditor/rte.js"></script>
+            <script type="text/javascript" src="richtexteditor/plugins/all_plugins.js"></script>
+        </head>
+        <body>
+            <div id="div_editor1">
+                <p>This is a default toolbar demo of Rich text editor.</p>
+            </div>
+            <button id="btn">GET</button>
+            <script>
+                var editor1 = new RichTextEditor("#div_editor1");
+                var btn = document.getElementById('btn');
+                btn.addEventListener('click', function() {
+                    console.log(editor1.getHTMLCode());
+                });
+            </script>
+        </body>
+        </html>
+================================================================
+    + Dùng luôn cho textarea vẫn được . 
+        <textarea name="content" class="form-control" id="content" rows="5" placeholder="Content">{{ old('content') }}</textarea>
+        <script>
+            var editor1 = new RichTextEditor("#content");
+        </script>
+        => Chỉ code như thế này thôi . Để nguyên như vậy và submit là trên server vẫn nhận được content là render HTML
+        
+    + Khi hiển thị ra 
+        <div>{{$article->content}}</div> <!-- CÁCH HIỂN THỊ TEXT  -->
+        <div>{!! $article->content !!}</div> <!-- CÁCH HIỂN THỊ HTML  -->
+================================================================
+Fix lỗi Unique khi update 
+    + Tham khảo : https://www.w3docs.com/snippets/php/how-validate-unique-email-out-of-the-user-that-is-updating-it-in-laravel.html#:~:text=In%20Laravel%2C%20you%20can%20use,in%20the%20specified%20database%20table.
+    + Khi update thì ta có rule 
+        + Mỗi username chỉ được 1 người duy nhất đăng kí  
+        + Mỗi email chỉ được 1 người duy nhất đăng kí  
+        + Nếu ta ghi rule là như thế này : 
+            return [
+                'name' => 'required',
+                'username' => 'required|unique:users',
+                'email' => 'required|email|unique:users',
+                'gender' => 'required',
+            ];
+
+        => Tất nhiên khi user này update username hoặc email thành username hay email của người khác thì nó phải báo rồi 
+        nhưng khi mà user này không chỉnh sửa gì cả và update thì nó cũng báo lỗi . 
+        => Nó báo lỗi là trùng ngay chính cái username và email hiện tại của nó . 
+
+        + Cách fix là : C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Http\Requests\RequestUpdateInfor.php
+            use Illuminate\Support\Facades\Auth;
+            return [
+                'name' => 'required',
+                'username' => 'required|unique:users,username,'.Auth::user()->id,
+                'email' => 'required|email|unique:users,email,'.Auth::user()->id,
+                'gender' => 'required',
+            ];
+================================================================
+Trong Laravel không cần dùng Event Bus hay VueX hay Piania như bên Vuejs, vì nó tổ chức theo layouts 
+và tạo thành một khối thống nhất . Thực chất trang web chính là một file html rất lớn . 
+Nên để bắt sự kiện từ file này sang file kia thì ta chỉ cần khai báo đoạn js ở file to mà chứa cả 2 file đó là được . 
+Không nhất thiết phải là file master . Chỉ cần là file chứa cả file (phát và bắt sự kiện) đó là được . 
+Ứng dụng để thiết kế layout cho trang main . Search bài viết hoặc người dùng trên thanh header (file header) còn body (file body)
+thì hiển thị kết quả . 
+================================================================
+Khi mở thanh Debug bar lên thì có Views là nơi hiện tất cả các file html đang được load tại trang . 
+================================================================
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php artisan make:model Comment -m -c
+Model created successfully.
+Created Migration: 2023_07_11_062239_create_comments_table
+Controller created successfully.
+
+C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php migrate
+=> table comments trong db tự thêm s 
+================================================================
+Query Model 
+public function viewMain(Request $request){
+
+    $articles = Article::all();
+    foreach($articles as $key => $article){
+        $num = count(Comment::where('id_article',$article->id)->get());
+        $articles[$key]->num_comment = $num;
+    }     
+    dd($articles);
+    return view('Blog.Main.ListArticles');
+}
+Tối ưu bằng cách : 
+    + Model Article thêm :
+        public function commentsCount(){
+            return $this->hasMany(Comment::class, 'id_article')->selectRaw('id_article, count(*) as count')->groupBy('id_article');
+        }
+
+    + Ngoài controller : 
+        $articles = Article::withCount('commentsCount')->paginate(6);
+        dd($articles);
+
+================================================================
+Không lan truyền sự kiện (phải click vào button mới được , click vào trúng thẻ i thì không được)
+    $(document).ready(function() {
+        $(".btn_setting").click(function() {
+        $(this).next(".show_setting").toggleClass("hidden");
+        });
+    
+        $(document).click(function(event) {
+        var target = $(event.target);
+        if (!target.hasClass("btn_setting") && !target.closest(".show_setting").length) {
+            $(".show_setting").addClass("hidden");
+        }
+        });
+    });
+
+Lan truyền sự kiện cho toàn bộ button (kể cả những thứ nằm trong đó như là thẻ i)
+    đoạn code trên chạy ổn rồi nhưng vấn đề là do               <button class="btn_setting" ><i class="fa-solid fa-ellipsis" ></i></button>
+    button chứa thẻ i nữa , mà khi tôi click vào trúng ngay thẻ i thì đoạn code trên không hoạt động , hãy sửa lại để toàn bộ button (Ngay cả thẻ i) cũng được 
+    ChatGPT
+    Để xử lý trường hợp khi click vào thẻ <i> bên trong button, bạn có thể sử dụng phương pháp sự kiện "bubbling" (lan truyền) của jQuery. Thay vì gắn sự kiện click trực tiếp cho .btn_setting, ta sẽ gắn sự kiện click cho document và sử dụng phương thức .closest() để xác định xem phần tử nào đã được click và xử lý nó. Dưới đây là đoạn mã sửa đổi:
+
+    javascript
+    Copy code
+    $(document).ready(function() {
+    $(document).on("click", function(event) {
+        var target = $(event.target);
+        if (!target.closest(".btn_setting").length && !target.closest(".show_setting").length) {
+        $(".show_setting").addClass("hidden");
+        }
+    });
+
+    $(".btn_setting").on("click", function() {
+        $(this).next(".show_setting").toggleClass("hidden");
+    });
+    });
+    Trong đoạn mã này, chúng ta đã thay đổi cách gắn sự kiện click cho .btn_setting bằng cách sử dụng .on() và sự kiện "bubbling" ($(document).on("click", function(event) { ... })). Khi click vào bất kỳ phần tử nào trong document, chúng ta sẽ kiểm tra nếu phần tử đó không thuộc .btn_setting và không thuộc .show_setting, thì ta thêm class "hidden" cho tất cả các phần tử .show_setting.
+    Bằng cách này, khi bạn click vào bất kỳ phần tử nào trong button (bao gồm cả thẻ <i>), đoạn mã sẽ vẫn hoạt động và ẩn .show_setting.
+================================================================
+Tóm lại : 
+    + Nếu là $(".btn_setting").click(function() thì nó sẽ không lan truyền sự kiện 
+    + Thay bằng on : $(document).on("click", function(event) thì nó sẽ lan truyền sự kiện 
+    => điểm khác nhau của 2 cái . 
+================================================================
+Trong rich text editor có cái thanh nằm dọc mà cứ hiện bên lề trái rất khó chịu => ẩn nó đi 
+    rte-floatpanel {
+        display: none !important;
+    }
+
+
+================================================================
+Get thuộc tính data từ một loại thẻ bất kì  
+    + Ta có : <div class="ajax_load_article" data-id_article="{{$article->id_article}}"></div>
+    + Code js : 
+        $('.ajax_load_article').on('click', function() {
+            var idArticle = $(this).data('id_article');
+            console.log(idArticle); 
+        }); 
+
+    + Note : Quy tắt đặt là : data-... (nghĩa là data- rồi đến gì đó)
+        ví dụ : data-id_article= hoặc data-id_user=" ,... 
+    + Khi lấy ra thì đây : var idArticle = $(this).data('id_article'); (lấy phần tên phía sau data thôi)
+================================================================
+Khi bấm kiểm tra thì mỗi style nào đều hiển thị rõ là của file css nào nên không lo gì cả . Muốn fix thì vào đó xem và 
+fix thôi . Không sợ nhiều file css quá thì tìm không ra . 
+================================================================
+$('.inlineFormInputGroup').keydown(function(event) {
+    if (event.which == 13) { // Kiểm tra mã phím là Enter (mã 13)
+        event.preventDefault(); // Ngăn chặn hành vi mặc định của phím Enter
+        var new_content_comment = $(this).val();
+        console.log(new_content_comment);
+        console.log(id_article); 
+        if(new_content_comment != ''){
+            $.ajax({
+                url: '/main/ajax-add-comment',
+                type: 'GET',
+                data: {
+                    id_article:id_article,
+                    new_content_comment: new_content_comment
+                },
+                success: function(response) {
+                    $("#list_comment_"+id_article).append(response.comment_element);
+                },
+                error: function(xhr) {
+                    console.log(xhr.responseText);
+                }
+            });
+        }
+        $(this).val('');
+    }
+});
+================================================================
+Fix lỗi không bắt được sự kiện đối với những element được add vào bằng append 
+    + https://stackoverflow.com/questions/52099861/event-listener-for-appended-html-elements-not-working
+    + Cùng 1 class những những element được load ngay khi tải trang thì bắt sự kiện bình thường 
+    + Còn những element được thêm vào sau bằng append thì không bắt sự kiện được 
+    + Cách fix là bọc đoạn code trong : 
+        $('body').on('click', '.announcement-delete-button', function (e) { /*Your code here*/ });
+
+    + Ví dụ : 
+        $(".btn_setting").on("click", function() {
+            var $showSetting = $(this).next(".show_setting");
+            $showSetting.toggleClass("hidden");
+            $(".btn_setting").not(this).next(".show_setting").addClass("hidden");
+        });
+
+    => Sẽ trở thành : 
+        $('body').on('click', '.btn_setting', function (e) {
+            var $showSetting = $(this).next(".show_setting");
+            $showSetting.toggleClass("hidden");
+            $(".btn_setting").not(this).next(".show_setting").addClass("hidden");
+        });
+
+================================================================
+Đây là đoạn code cũ : 
+<script>
+// show setting article  
+$(document).ready(function() {
+    $(document).on("click", function(event) {
+      var target = $(event.target);
+      if (!target.closest(".btn_setting").length && !target.closest(".show_setting").length) {
+        $(".show_setting").addClass("hidden");
+      }
+    });
+    $(".btn_setting").on("click", function() {
+      var $showSetting = $(this).next(".show_setting");
+      $showSetting.toggleClass("hidden");
+      $(".btn_setting").not(this).next(".show_setting").addClass("hidden");
+    });
+});
+
+// show setting comment 
+$(document).ready(function() {
+    $(document).on("click", function(event) {
+      var target = $(event.target);
+      if (!target.closest(".btn_setting_cmt").length && !target.closest(".show_setting_cmt").length) {
+        $(".show_setting_cmt").addClass("hidden");
+      }
+    });
+    $(".btn_setting_cmt").on("click", function() {
+        console.log('fix bif');
+      var $showSetting = $(this).next(".show_setting_cmt");
+      $showSetting.toggleClass("hidden");
+      $(".btn_setting_cmt").not(this).next(".show_setting_cmt").addClass("hidden");
+    });
+});
+
+// ẩn hiện form edit comment 
+$('.li_edit_comment').on('click', function() {
+    var str = $(this).attr('id');
+    var parts = str.split('_');
+    var id_comment = parts[2];
+    $('#infor_comment_'+id_comment+', #form_edit_'+id_comment).toggleClass('hidden');
+});
+
+// cancel edit 
+$('.btn_cancel').on('click', function() {
+    var str = $(this).attr('id');
+    var parts = str.split('_');
+    var id_comment = parts[2];
+    $('#infor_comment_'+id_comment+', #form_edit_'+id_comment).toggleClass('hidden');
+});
+
+// btn save 
+$('.btn_save').on('click', function() {
+    var str = $(this).attr('id');
+    var parts = str.split('_');
+    var id_comment = parts[2];
+    var new_content_comment = $('#textarea_'+id_comment).val();
+    $.ajax({
+        url: '/main/ajax-update-comment',
+        type: 'GET',
+        data: {
+          id_comment: id_comment,
+          new_content_comment: new_content_comment
+        },
+        success: function(response) {
+          // Xử lý kết quả thành công
+          console.log(response);
+        },
+        error: function(xhr) {
+          // Xử lý lỗi
+          console.log(xhr.responseText);
+        }
+    });
+    $('#comment_content_'+id_comment).html(new_content_comment);
+    $('#infor_comment_'+id_comment+', #form_edit_'+id_comment).toggleClass('hidden');
+});
+
+// ajax thì nên dùng GET thay vì dùng POST 
+// giải thích : thực chất GET hay POST đều cũng chỉ là ta mượn một phương thức để lên được controller làm gì đó thôi 
+// nên get hay post cũng không quan trọng lắm (nếu không tính đến chuyện bảo mật)
+
+// delete 
+$('.li_delete').on('click', function() {
+    var str = $(this).attr('id');
+    var parts = str.split('_');
+    var id_comment = parts[2];
+    $.ajax({
+        url: '/main/ajax-delete-comment',
+        type: 'GET',
+        data: {
+          id_comment: id_comment
+        },
+        success: function(response) {
+          // Xử lý kết quả thành công
+          console.log(response);
+        },
+        error: function(xhr) {
+          // Xử lý lỗi
+          console.log(xhr.responseText);
+        }
+    });
+    $('#comment_article_'+id_comment).addClass('hidden');
+});
+
+// add Comment
+// ajax load content article and comment 
+// Ta có : <div class="ajax_load_article" data-id_article="{{$article->id_article}}"
+var id_article = '';
+$('.ajax_load_article').on('click', function() {
+    id_article = $(this).data('id_article');
+}); 
+$('.inlineFormInputGroup').keydown(function(event) {
+    if (event.which == 13) { // Kiểm tra mã phím là Enter (mã 13)
+        event.preventDefault(); // Ngăn chặn hành vi mặc định của phím Enter
+        var new_content_comment = $(this).val();
+        console.log(new_content_comment);
+        console.log(id_article); 
+        if(new_content_comment != ''){
+            $.ajax({
+                url: '/main/ajax-add-comment',
+                type: 'GET',
+                data: {
+                    id_article:id_article,
+                    new_content_comment: new_content_comment
+                },
+                success: function(response) {
+                    $("#list_comment_"+id_article).append(response.comment_element);
+                },
+                error: function(xhr) {
+                    console.log(xhr.responseText);
+                }
+            });
+        }
+        $(this).val('');
+    }
+});
+</script>
+================================================================
+Đây là đoạn code mới sau khi fix 
+<script>
+    var id_article = '';
+$('.ajax_load_article').on('click', function() {
+    id_article = $(this).data('id_article');
+}); 
+
+// show setting article 
+$(document).ready(function() {
+    $(document).on("click", function(event) {
+      var target = $(event.target);
+      if (!target.closest(".btn_setting").length && !target.closest(".show_setting").length) {
+        $(".show_setting").addClass("hidden");
+      }
+    });
+    $(".btn_setting").on("click", function() {
+      var $showSetting = $(this).next(".show_setting");
+      $showSetting.toggleClass("hidden");
+      $(".btn_setting").not(this).next(".show_setting").addClass("hidden");
+    });
+});
+
+// show setting comment  
+$(document).ready(function() {
+    $(document).on("click", function(event) {
+      var target = $(event.target);
+      if (!target.closest(".btn_setting_cmt").length && !target.closest(".show_setting_cmt").length) {
+        $(".show_setting_cmt").addClass("hidden");
+      }
+    });
+});
+$('body').on('click', '.btn_setting_cmt', function (e) {
+    var $showSetting = $(this).next(".show_setting_cmt");
+    $showSetting.toggleClass("hidden");
+    $(".btn_setting_cmt").not(this).next(".show_setting_cmt").addClass("hidden");
+});
+
+// ẩn hiện form edit comment 
+$('body').on('click', '.li_edit_comment', function (e) {
+    var str = $(this).attr('id');
+    var parts = str.split('_');
+    var id_comment = parts[2];
+    $('#infor_comment_'+id_comment+', #form_edit_'+id_comment).toggleClass('hidden');
+    $('#textarea_'+id_comment).val($('#comment_content_'+id_comment).html());
+});
+
+// cancel edit 
+$('body').on('click', '.btn_cancel', function (e) {
+    var str = $(this).attr('id');
+    var parts = str.split('_');
+    var id_comment = parts[2];
+    $('#infor_comment_'+id_comment+', #form_edit_'+id_comment).toggleClass('hidden');
+});
+
+// btn save 
+$('body').on('click', '.btn_save', function (e) {
+    var str = $(this).attr('id');
+    var parts = str.split('_');
+    var id_comment = parts[2];
+    var new_content_comment = $('#textarea_'+id_comment).val();
+    $.ajax({
+        url: '/main/ajax-update-comment',
+        type: 'GET',
+        data: {
+          id_comment: id_comment,
+          new_content_comment: new_content_comment
+        },
+        success: function(response) {
+          // Xử lý kết quả thành công
+          console.log(response);
+        },
+        error: function(xhr) {
+          // Xử lý lỗi
+          console.log(xhr.responseText);
+        }
+    });
+    $('#comment_content_'+id_comment).html(new_content_comment);
+    $('#infor_comment_'+id_comment+', #form_edit_'+id_comment).toggleClass('hidden');
+});
+
+// ajax thì nên dùng GET thay vì dùng POST 
+// giải thích : thực chất GET hay POST đều cũng chỉ là ta mượn một phương thức để lên được controller làm gì đó thôi 
+// nên get hay post cũng không quan trọng lắm (nếu không tính đến chuyện bảo mật)
+
+// set number comment 
+function addComment() {
+    var str = $('#number_comment_'+id_article).html();
+    var number = parseInt(str); // ví dụ chuỗi là "9 Comments"; thì chỉ còn lại 9 (nó sẽ tự bỏ đi cái không phải chuỗi)
+    number = number + 1 ; 
+    $('#number_comment_'+id_article).html(number+' Comments');
+}
+
+function deleteComment() {
+    var str = $('#number_comment_'+id_article).html();
+    var number = parseInt(str); // ví dụ chuỗi là "9 Comments"; thì chỉ còn lại 9 (nó sẽ tự bỏ đi cái không phải chuỗi)
+    number = number - 1 ; 
+    $('#number_comment_'+id_article).html(number+' Comments');
+}
+
+// delete 
+$('body').on('click', '.li_delete', function (e) {
+    var str = $(this).attr('id');
+    var parts = str.split('_');
+    var id_comment = parts[2];
+    $.ajax({
+        url: '/main/ajax-delete-comment',
+        type: 'GET',
+        data: {
+          id_comment: id_comment
+        },
+        success: function(response) {
+          // Xử lý kết quả thành công
+          console.log(response);
+        },
+        error: function(xhr) {
+          // Xử lý lỗi
+          console.log(xhr.responseText);
+        }
+    });
+    deleteComment();
+    $('#comment_article_'+id_comment).addClass('hidden');
+});
+
+// add Comment
+// ajax load content article and comment 
+// Ta có : <div class="ajax_load_article" data-id_article="{{$article->id_article}}"
+
+$('body').on('keydown', '.inlineFormInputGroup', function (event) {
+    if (event.which == 13) { // Kiểm tra mã phím là Enter (mã 13)
+        event.preventDefault(); // Ngăn chặn hành vi mặc định của phím Enter
+        var new_content_comment = $(this).val();
+        // console.log(new_content_comment);
+        // console.log(id_article); 
+        if(new_content_comment != ''){
+            $.ajax({
+                url: '/main/ajax-add-comment',
+                type: 'GET',
+                data: {
+                    id_article:id_article,
+                    new_content_comment: new_content_comment
+                },
+                success: function(response) {
+                    $("#list_comment_"+id_article).append(response.comment_element);
+                },
+                error: function(xhr) {
+                    console.log(xhr.responseText);
+                }
+            });
+            addComment();
+        }
+        $(this).val('');
+    }
+});
+</script>
+================================================================
+Có thể không load lại trang khi thêm xóa sửa bằng cách dùng ajax  
+    + Thêm thì dùng append 
+    + Sửa thì set lại giá trị innerHTML hoặc value cho nó 
+    + Xóa thì display none đi 
+    => Đó là trên giao diện còn trên server thì ajax cũng đã gọi đến controller và thực hiện các việc cần làm rồi . 
+================================================================
+Nói chung là có nhiều cách 
+    + Ví dụ như code chức năng show and hidden setting article thì có 2 cách 
+        + 1 Là code theo kiểu tổng quá . dùng parent và next các kiểu để xác định cái được click ,...
+        + 2 Là dùng keo kiểu render ra một load id , ví dụ id="li_edit_{{$article->id_article}}"
+        sau đó click vào cái nào thì tách chuỗi ra ,... 
+            // cancel edit 
+            $('body').on('click', '.btn_cancel', function (e) {
+                var str = $(this).attr('id');
+                var parts = str.split('_');
+                var id_comment = parts[2];
+                $('#infor_comment_'+id_comment+', #form_edit_'+id_comment).toggleClass('hidden');
+            });
+
+    + Cách 1 thì không render ra nhiều html css nhưng code lâu hơn tại vì suy nghĩ lâu hơn chút 
+    + Cách 2 thì cứ thể mà code không suy nghĩ nhiều nên nhanh 
+    => so sánh thì nên dùng cách 2 tại vì render ra thêm chút html thì không làm chậm trang web được mà ưu tiên code nhanh . 
+
+Đối với Modal Article Details cũng thế . Cũng có 2 cách là render ra nhiều và chỉ render 1 lần modal còn lại nội dung 
+cái nào thì dùng ajax lấy cái đấy . Thấy cách 1 là ok nhất . Tại vì nó cũng khỏe .  
+================================================================
+Capcha Google . Laravel Google ReCaptcha V2 Example Tutorial
+    + https://www.itsolutionstuff.com/post/laravel-google-recaptcha-v2-example-tutorialexample.html
+
+B1 : Vào https://www.google.com/recaptcha/admin/create
+    + Label : localhost
+    + Ở reCAPTCHA type : Chọn Challenge (v2) Verify requests with a challenge tiếp đến 
+        + Chọn "I'm not a robot" Checkbox Validate requests with the "I'm not a robot" checkbox
+        + Hoặc Invisible reCAPTCHA badge Validate requests in the background
+    + Domains : localhost
+    => SUBMIT 
+
+B2 : Ta có được 
+    + SITE KEY   : 6LfVKR8nAAAAAB9oHO-h_S4DEi6dK0gArr3E6WzE
+    + SECRET KEY : 6LfVKR8nAAAAANKaCmS2frdoPhmu3sU8q3GY4C_c
+
+B3 : Điền vào file .env 
+    GOOGLE_RECAPTCHA_KEY=6LfVKR8nAAAAAB9oHO-h_S4DEi6dK0gArr3E6WzE
+    GOOGLE_RECAPTCHA_SECRET=6LfVKR8nAAAAANKaCmS2frdoPhmu3sU8q3GY4C_c
+
+B4 : C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>php artisan make:rule ReCaptcha
+    Rule created successfully. 
+    Code vào : C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Rules\ReCaptcha.php
+        <?php
+            
+            namespace App\Rules;
+            
+            use Illuminate\Contracts\Validation\Rule;
+            use Illuminate\Support\Facades\Http;
+            
+            class ReCaptcha implements Rule
+            {
+                /**
+                * Create a new rule instance.
+                *
+                * @return void
+                */
+                public function __construct()
+                {
+                    
+                }
+                /**
+                * Determine if the validation rule passes.
+                *
+                * @param  string  $attribute
+                * @param  mixed  $value
+                * @return bool
+                */
+                public function passes($attribute, $value)
+                {
+                    $response = Http::get("https://www.google.com/recaptcha/api/siteverify",[
+                        'secret' => env('GOOGLE_RECAPTCHA_SECRET'),
+                        'response' => $value
+                    ]);
+                    
+                    return $response->json()["success"];
+                }
+                /**
+                * Get the validation error message.
+                *
+                * @return string
+                */
+                public function message()
+                {
+                    return 'The google recaptcha is required.';
+                }
+            }
+
+B5 : Thêm link js vào head của master.blade.php 
+    <script src='https://www.google.com/recaptcha/api.js'></script>
+
+B6 : Thêm vào một form submit nào nó mà mình cần recaptcha google . Ví dụ là Login 
+    C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\resources\views\Blog\Auth\login.blade.php : 
+        <div class="g-recaptcha" data-sitekey="{{ env('GOOGLE_RECAPTCHA_KEY') }}"></div>
+        @if ($errors->has('g-recaptcha-response'))
+            <span class="text-danger">{{ $errors->first('g-recaptcha-response') }}</span>
+        @endif
+
+B7 : Thêm vào validate ở Controller tương tứng 
+    C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel\app\Http\Controllers\BlogAuthController.php : 
+
+    public function userLogin(Request $request)
+    {
+        ...
+
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+            'g-recaptcha-response' => ['required', new ReCaptcha]
+        ]);
+
+        ...
+
+    }
+
+=> XONG. 
+
+Hoặc ra có thể bỏ ngay đầu hàm xử lý submit form đó . Ví dụ : Bởi vì đây kiểu gì cũng là điều kiện chắc chắn phải có để submit form 
+Còn lại request có tách ra file riêng hay để ở đây luôn thì kệ nó , không quan tâm 
+    public function userLogin(Request $request)
+    {
+        $request->validate(['g-recaptcha-response' => ['required', new ReCaptcha]]);
+
+        ...
+
+    }
+================================================================
