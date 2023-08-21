@@ -493,8 +493,303 @@ Custom Rule: (Mới)
 
 ----------------------------------
 
+https://github.com/NguyenVanManh-AI/bap-bloglaravel
+
+------------------------------Caching------------------------------
+Caching     
+    + Caching (lưu trữ tạm thời) là một kỹ thuật quan trọng trong phát triển phần mềm để cải thiện hiệu suất ứng dụng bằng cách lưu trữ dữ liệu tính toán hoặc truy vấn cơ sở dữ liệu trong bộ nhớ tạm thời. Khi dữ liệu được lưu trữ tại vị trí này, ứng dụng có thể truy cập nhanh chóng và tránh việc phải tính toán lại hoặc truy vấn cơ sở dữ liệu liên tục.
+    + Laravel cung cấp nhiều cách để thực hiện caching trong ứng dụng của bạn.
+
+    1. Caching Dữ liệu:
+        Bạn có thể cache dữ liệu kết quả từ các truy vấn cơ sở dữ liệu hoặc từ bất kỳ nguồn dữ liệu nào khác. Laravel hỗ trợ cache bằng cách sử dụng Cache facade hoặc thông qua Dependency Injection.
+
+        // Sử dụng Cache facade
+        $value = Cache::get('key');
+        Cache::put('key', $value, $minutes);
+
+        // Sử dụng Dependency Injection
+        use Illuminate\Contracts\Cache\Repository as Cache;
+
+        public function __construct(Cache $cache)
+        {
+            $this->cache = $cache;
+        }
+
+        $value = $this->cache->get('key');
+        $this->cache->put('key', $value, $minutes);
+
+    2. Caching View:
+        Laravel cho phép bạn cache kết quả của view để tăng hiệu suất render view. Sử dụng lệnh Artisan để tạo view cache.
+        php artisan view:cache
+
+    3. Cache Route:
+        Laravel cung cấp tích hợp cho việc cache route. Bạn có thể cache route để giảm thời gian xử lý route.
+        Route::get('profile', function () {
+            //
+        })->middleware('cacheResponse:600'); // Cache for 10 minutes
+
+    4. Cache Fragment:
+        Caching fragment cho phép bạn cache một phần của view, chứ không phải toàn bộ view.
+        @cache('key')
+            <div>
+                <!-- Content to be cached -->
+            </div>
+        @endcache
+
+    5. Caching Query:
+        Laravel cho phép bạn cache kết quả của các truy vấn cơ sở dữ liệu.
+        $users = DB::table('users')->remember(10)->get(); // Cache for 10 minutes
+
+    6. Caching Configuration:
+        Bạn có thể cache configuration để tránh phải đọc file cấu hình mỗi lần ứng dụng khởi động.
+        php artisan config:cache
+        Tất cả các loại cache đều có thể được quản lý và xóa thông qua các lệnh Artisan hoặc thông qua tùy chọn cấu hình. Caching là một cách mạnh mẽ để cải thiện hiệu suất ứng dụng và giảm tải cho cơ sở dữ liệu.
 
 
+Ví dụ dễ hiểu về Caching : 
+    + Ví dụ để lấy dữ liệu của toàn bộ sản phẩm , ta cũng sẽ code vào controller như bình thường, nhưng có thể sử dụng thêm Caching với 
+    với mục đích là : Lưu dữ liệu lấy được , ví dụ lưu toàn bộ sản phẩm lấy được vào cache và thiết lập trong khoảng thời gian bao nhiêu đó . 
+    Nếu trong khoản thời gian này mà hệ thống gọi lại hàm getProducts() thì nó không cần query lại nữa mà lấy dữ liệu đã lưu từ trước 
+    đó trong cache . Hết thời gian quy định thì xóa cache đi và nếu như gọi getProducts() và nó kiểm tra trong cache không 
+    có biến lưu toàn bộ sản phẩm thì nó lại bắt đầu một query mới và thiết lập lại thời gian mới . (Cứ như thế lặp đi lặp lại)
+    Ví dụ : $products = Cache::remember('products', 60, function () { => thiết lập 60 phút 
+
+    + Lưu ý : 
+        + Việc lấy cache này có thể gặp vấn đề khi mà cache vẫn lưu giá trị cũ , trong khi trong database đã update cái mới 
+        + Ví dụ : Lấy toàn bộ sản phẩm lưu trong 60 phút . Trong 60 phút đó , giả sử có người update các sản phẩm rồi 
+        thì khi ta lấy ra mà vẫn lấy trong cache thì vẫn đang lấy cái cũ . 
+            => hướng giải quyết là khi update nói chung hay bất cứ hành động liên quan đến tất cả sản phẩm 
+            làm cho tất cả sản phẩm trong database thay đổi thì cần phải xóa biến cache lưu tất cả các sản phẩm đi 
+            và update lại biến cache mới lưu tất cả các sản phẩm có chứa các sản phẩm vừa mới update . 
+
+    1. Cache dữ liệu danh sách sản phẩm:
+        + Trong Controller của bạn, bạn có thể sử dụng Cache facade để lưu trữ danh sách sản phẩm từ cơ sở dữ liệu:
+        use Illuminate\Support\Facades\Cache;
+        use App\Models\Product;
+
+        public function getProducts()
+        {
+            $products = Cache::remember('products', 60, function () {
+                return Product::all();
+            });
+
+            return view('products.index', ['products' => $products]);
+        }
+
+    => Trong đoạn mã trên, danh sách sản phẩm sẽ được lưu trữ trong cache trong vòng 60 phút. Nếu bạn gọi hàm getProducts() trong khoảng thời gian 60 phút, dữ liệu sẽ được lấy từ cache mà không cần truy vấn lại cơ sở dữ liệu.
+    2. Xóa Cache khi dữ liệu thay đổi:
+        + Khi bạn thêm, sửa hoặc xóa sản phẩm, bạn nên xóa cache để đảm bảo rằng dữ liệu mới nhất sẽ được hiển thị. Bạn có thể sử dụng hàm forget để xóa cache:
+        + Cache::forget('products');
+        => Đặt hàm này trong các hành động tạo, sửa hoặc xóa sản phẩm.
+
+    3. Sử dụng tên cache phân cấp:
+        + Nếu bạn muốn xử lý cache phân cấp theo từng danh mục hoặc trang, bạn có thể sử dụng tên cache phân cấp:
+            $category = 'electronics'; // thiết bị điện tử 
+            $cacheKey = "products.$category";
+
+            $products = Cache::remember($cacheKey, 60, function () use ($category) {
+                return Product::where('category', $category)->get();
+            });
+
+        => Trong ví dụ này, dữ liệu danh sách sản phẩm của danh mục "electronics" sẽ được lưu trữ riêng biệt với tên cache phân cấp "products.electronics".
+        => Caching là một công cụ mạnh mẽ để cải thiện hiệu suất ứng dụng và giảm tải cho cơ sở dữ liệu. 
+        Tuy nhiên, hãy cẩn thận khi sử dụng caching để đảm bảo rằng dữ liệu luôn được cập nhật đúng và không gây ra sự cố không mong muốn.
+
+------------------------------Schedule Job và Queue------------------------------
+Schedule job (lên lịch công việc) và queue (hàng đợi)
+
+=> Schedule Job và Queue là hai khái niệm quan trọng trong Laravel liên quan đến quản lý các tác vụ chạy dưới nền hoặc theo lịch trình. 
+Dưới đây là sự khác nhau giữa chúng:
+
++ Schedule Job:
+Schedule Job trong Laravel được sử dụng để thực hiện các tác vụ định kỳ theo lịch trình đã xác định.
+Để định nghĩa và cấu hình Schedule Job, bạn sử dụng class Kernel (thường là file app/Console/Kernel.php) để xác định các tác vụ cần chạy định kỳ. Bạn có thể sử dụng các phương thức như daily(), hourly(), everyMinute(),... để lên lịch thực hiện các tác vụ.
+Schedule Job thường được sử dụng cho các tác vụ cần thực hiện định kỳ theo lịch như gửi email hàng ngày, làm sạch dữ liệu, cập nhật thông tin và nhiều tác vụ khác.
+
++ Queue:
+Queue trong Laravel là hệ thống cho phép bạn xử lý các tác vụ nền mà không cần chờ đợi chúng hoàn thành trước khi tiếp tục xử lý.
+Các tác vụ trong Queue được xử lý bởi các workers, tức là các tiến trình chạy độc lập với ứng dụng chính. Điều này giúp tách biệt quá trình xử lý tác vụ nền và tạo ra trải nghiệm ứng dụng tốt hơn cho người dùng.
+Queue thường được sử dụng cho các tác vụ mất nhiều thời gian xử lý như gửi email hàng loạt, xử lý tác vụ tải nặng, tính toán phức tạp, v.v.
+Tóm lại, Schedule Job dùng để thực hiện các tác vụ định kỳ theo lịch, trong khi Queue dùng để xử lý các tác vụ nền một cách bất đồng bộ và không ảnh hưởng đến việc xử lý của ứng dụng chính.
+
+------------------------------Schedule Job và Queue------------------------------
+
++ Schedule Job : Lên lịch công việc (hàng ngày, giây, phút, giờ, tuần,...)
++ Queue : Hàng đợi (không phải là bất đồng bộ như bên JS mà bên PHP sẽ là thực hiện đồng bộ từ trên xuống
+    => chính vì thế tác vụ nào lâu nên cho vào hàng đợi)
+
++ Ví dụ sử dụng Schedule Job để gửi mail hàng ngày : 
+    + Để thực hiện việc gửi email hàng ngày cho tất cả các địa chỉ email trong bảng "users", bạn có thể sử dụng Laravel's Schedule và Mail. 
+    Dưới đây là ví dụ cụ thể về cách làm điều này:
+
+    + Tạo một Job để Gửi Email:
+        + Đầu tiên, bạn cần tạo một job để thực hiện việc gửi email. Hãy tạo một job bằng câu lệnh sau:
+        + php artisan make:job SendDailyEmail
+
+        + Sau đó, mở file app/Jobs/SendDailyEmail.php và định nghĩa logic gửi email trong hàm handle():
+            use App\Models\User;
+            use Illuminate\Bus\Queueable;
+            use Illuminate\Contracts\Queue\ShouldQueue;
+            use Illuminate\Foundation\Bus\Dispatchable;
+            use Illuminate\Queue\InteractsWithQueue;
+            use Illuminate\Queue\SerializesModels;
+            use Illuminate\Support\Facades\Mail;
+            use App\Mail\DailyEmail;
+
+            class SendDailyEmail implements ShouldQueue
+            {
+                use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+                public function handle()
+                {
+                    $users = User::all();
+
+                    foreach ($users as $user) {
+                        Mail::to($user->email)->send(new DailyEmail($user));
+                    }
+                }
+            }
+
+        + Tạo Mailable:
+            + Bạn cần tạo một Mailable để định dạng nội dung email. Hãy tạo một Mailable bằng câu lệnh sau:
+            + php artisan make:mail DailyEmail
+            + Sau đó, trong file app/Mail/DailyEmail.php, bạn có thể định nghĩa nội dung email:
+                use App\Models\User;
+                use Illuminate\Bus\Queueable;
+                use Illuminate\Contracts\Queue\ShouldQueue;
+                use Illuminate\Mail\Mailable;
+                use Illuminate\Queue\SerializesModels;
+
+                class DailyEmail extends Mailable
+                {
+                    use Queueable, SerializesModels;
+
+                    public $user;
+
+                    public function __construct(User $user)
+                    {
+                        $this->user = $user;
+                    }
+
+                    public function build()
+                    {
+                        return $this->markdown('emails.daily', ['user' => $this->user]);
+                    }
+                }
+
+        + Định lịch gửi email hàng ngày:
+            + Mở file app/Console/Kernel.php và thêm đoạn code trong phương thức schedule():
+                use App\Jobs\SendDailyEmail;
+
+                protected function schedule(Schedule $schedule)
+                {
+                    $schedule->job(new SendDailyEmail)->daily();
+                }
+        + Tạo View cho Email:
+            + Trong thư mục resources/views/emails, tạo một file daily.blade.php để định dạng email.
+        
+        + Cuối cùng, chạy các lệnh sau:
+            php artisan queue:work
+            php artisan schedule:run
+
+        + Laravel sẽ tự động gửi email hàng ngày cho tất cả các địa chỉ email trong bảng "users".
+
+    
+    + Thiết lập ngày và giờ khác : 
+        + Mở file app/Console/Kernel.php và thay thế phương thức daily() bằng dailyAt('08:00'):
+            use App\Jobs\SendDailyEmail;
+
+            protected function schedule(Schedule $schedule)
+            {
+                $schedule->job(new SendDailyEmail)->dailyAt('08:00');
+            }
+
+    
+        + Mỗi phút : $schedule->job(new SendDailyEmail)->everyMinute();
+        + Mỗi giây : $schedule->job(new SendDailyEmail)->everySecond();
+        + Mỗi giờ  : $schedule->job(new SendDailyEmail)->hourly();
+        + Mỗi tuần (vào thứ 2 lúc 8h) : $schedule->job(new SendDailyEmail)->weeklyOn(1, '8:00');
+        + Mỗi tháng (ngày 1 lúc 8h) : $schedule->job(new SendDailyEmail)->monthlyOn(1, '8:00');
+        + Mỗi năm (ngày 1 tháng 1 lúc 8h) : $schedule->job(new SendDailyEmail)->yearlyOn(1, 1, '8:00');
+
+    + Nhớ rằng, để kích hoạt các lịch trình này, bạn cần chạy lệnh php artisan schedule:run.
 
 
++ Ví dụ sử dụng Queue để cho vào hàng đợi, lấy ví dụ thực tế trong việc gửi mail cho nhiều người : 
+    + Để thực hiện việc gửi email đến tất cả các địa chỉ email trong bảng người dùng (table users) bằng cách sử dụng Queue, 
+    bạn có thể sử dụng một thư viện hỗ trợ hàng đợi như Laravel Queue. Dưới đây là một ví dụ về cách bạn có thể viết mã trong Laravel:
+    + Trước hết, hãy tạo một job để xử lý việc gửi email. Trong thư mục app/Jobs, bạn có thể tạo một tệp tin mới với tên là SendEmailJob.php:
+    + php artisan make:job SendEmailJob
+    + Sau đó, trong tệp tin app/Jobs/SendEmailJob.php, bạn có thể thêm logic để gửi email:
+        namespace App\Jobs;
 
+        use Illuminate\Bus\Queueable;
+        use Illuminate\Contracts\Queue\ShouldQueue;
+        use Illuminate\Foundation\Bus\Dispatchable;
+        use Illuminate\Queue\InteractsWithQueue;
+        use Illuminate\Queue\SerializesModels;
+        use Illuminate\Support\Facades\Mail;
+        use App\Mail\YourMail; // Thay YourMail bằng mẫu thư bạn muốn gửi
+
+        class SendEmailJob implements ShouldQueue
+        {
+            use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+            protected $email;
+
+            public function __construct($email)
+            {
+                $this->email = $email;
+            }
+
+            public function handle()
+            {
+                Mail::to($this->email)->send(new YourMail()); // Thay YourMail bằng mẫu thư bạn muốn gửi
+            }
+        }
+    
+    + Tiếp theo, trong hàm sendAll() của ControllerUser, bạn có thể lặp qua tất cả các địa chỉ email trong bảng người dùng và đưa chúng vào hàng đợi gửi email:
+        use App\Jobs\SendEmailJob;
+        use App\Models\User;
+
+        class ControllerUser extends Controller
+        {
+            public function sendAll()
+            {
+                $users = User::all();
+
+                foreach ($users as $user) {
+                    dispatch(new SendEmailJob($user->email));
+                }
+
+                return "Emails are being sent in the background.";
+            }
+        }
+
+    + Cuối cùng, đảm bảo rằng bạn đã cấu hình hàng đợi trong tệp .env của bạn và chạy tác vụ hàng đợi bằng cách chạy lệnh sau:
+    + php artisan queue:work
+    => Như vậy, mỗi địa chỉ email sẽ được đưa vào hàng đợi gửi email và được xử lý một cách song song trong hàng đợi.
+
+
+    
++ Để cấu hình hàng đợi trong Laravel, bạn cần chỉnh sửa tệp .env của dự án của mình. Dưới đây là một số cài đặt liên quan đến hàng đợi mà bạn cần thay đổi trong tệp .env:
+    + Cấu hình driver hàng đợi: Bạn cần xác định driver hàng đợi bạn muốn sử dụng. Laravel hỗ trợ nhiều driver như sync (đồng bộ), database, redis, beanstalkd, sqs (Amazon Simple Queue Service) và nhiều cái khác. Ví dụ, để sử dụng driver database, bạn có thể thêm dòng sau vào tệp .env:
+
+        QUEUE_CONNECTION=database
+        Kết nối cho driver hàng đợi: Nếu bạn chọn sử dụng driver database, bạn cần chỉ định kết nối cơ sở dữ liệu mà bạn muốn sử dụng cho hàng đợi. Ví dụ:
+        DB_CONNECTION=mysql
+        DB_QUEUE_TABLE=jobs
+        Cấu hình Redis (nếu sử dụng Redis): Nếu bạn chọn sử dụng driver redis, bạn cần cung cấp thông tin kết nối đến máy chủ Redis:
+        
+        REDIS_HOST=127.0.0.1
+        REDIS_PASSWORD=null
+        REDIS_PORT=6379
+        Chạy tác vụ hàng đợi: Cuối cùng, bạn cần chạy tác vụ hàng đợi để xử lý các công việc trong hàng đợi. Sử dụng lệnh sau:
+        
+        php artisan queue:work
+        Ví dụ, nếu bạn đã cấu hình driver là database, bạn sẽ thấy các công việc hàng đợi được lưu trong bảng jobs của cơ sở dữ liệu và tác vụ hàng đợi (php artisan queue:work) sẽ lấy các công việc này và xử lý chúng một cách song song.
+        
+        Lưu ý rằng cấu hình hàng đợi có thể thay đổi tùy theo yêu cầu và môi trường của dự án của bạn. Hãy xem tài liệu chính thức của Laravel để biết thêm thông tin về cấu hình hàng đợi: https://laravel.com/docs/8.x/queues
+
+------------------------------Relationships------------------------------
+1-n 
