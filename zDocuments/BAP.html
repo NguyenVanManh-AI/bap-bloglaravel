@@ -20,3 +20,481 @@
         + Trang chủ : http://localhost/
         + Mysql database cũng tương tự 
         + 
+
+
+-----------------------------Service-----------------------
+Service 
+    Bạn đang nói đến Service trong thư mục app/Services. Thư mục app/Services thường được sử dụng để chứa các class dịch vụ tùy chỉnh của bạn, đây là một phần của cơ chế Dependency Injection trong Laravel.
+    Mục đích chính của việc sử dụng các class dịch vụ trong thư mục app/Services là để tách logic xử lý khỏi controllers và các phần khác trong ứng dụng. Điều này giúp mã của bạn trở nên dễ đọc hơn, dễ bảo trì hơn và dễ dàng kiểm thử.
+    Ví dụ, nếu bạn có một chức năng cần thực hiện một số xử lý phức tạp như gửi email, xử lý dữ liệu, gọi API bên ngoài, bạn có thể tạo một class dịch vụ trong thư mục app/Services để thực hiện các tác vụ này. Sau đó, bạn có thể tiêm nó vào controller hoặc bất kỳ nơi nào cần sử dụng thông qua Dependency Injection.
+    Ví dụ về cách sử dụng một class dịch vụ trong controller:
+
+    use App\Services\MyService;
+
+    class MyController extends Controller
+    {
+        protected $myService;
+
+        public function __construct(MyService $myService)
+        {
+            $this->myService = $myService;
+        }
+
+        public function index()
+        {
+            $data = $this->myService->getData();
+            // ...
+        }
+    }
+    Trong ví dụ trên, $myService là một instance của MyService class, và bạn có thể gọi các phương thức của class này để thực hiện các tác vụ cụ thể.
+    Điều này giúp bạn giữ cho logic của bạn được tách ra một cách rõ ràng và sẽ làm cho controllers của bạn trở nên nhẹ nhàng và dễ kiểm thử hơn.
+
++ Mục đích của Service là 
+    + Tách phần code logic từ Controller ra để cho controller nhẹ nhàng hơn . 
+    + Nếu nhiều chỗ dùng lui dùng tới phần code đó => tách ra để ở service => controller nào cần thì bỏ vào . 
+
++ Không có câu lệnh tạo file Service (tự tạo bằng tay)
+
+p12 
+Ví dụ về Service : 
+Service 
+    + C:\Users\ADMIN\Downloads\izisoft\p12nhadatexpress\app\Services\UserService.php
+
+Controllers 
+    + p12nhadatexpress\app\Http\Controllers\Admin\Report\Account\ReportCommentAccountController.php
+    + p12nhadatexpress\app\Http\Controllers\Admin\Comment\CommentController.php
+    + p12nhadatexpress\app\Http\Controllers\Admin\Comment\ReportCommentController.php
+    + p12nhadatexpress\app\Http\Controllers\Admin\Event\EventReportController.php
+    + p12nhadatexpress\app\Http\Controllers\Admin\PersonalPage\PersonalPageReportController.php
+    + ...
+
+=> Ví dụ hàm : $this->userService->blockUser => được dùng lại rất nhiều lần => tách ra khỏi Controller để
+cho vào Service , lúc này , làm nào cũng dùng được . 
+
+
+-----------------------------------------------Quản lý, tạo dữ liệu mẫu DB với migrate, seeder, factory---------------------------------------------------------------------
++ Seeder và Factory 
+    + Tạo Seeder:
+        > php artisan make:seeder UsersTableSeeder
+    
+    + Có hai trường hợp : 
+        + Tạo một dòng dữ liệu 
+            + <?php
+
+            namespace Database\Seeders;
+            
+            use Illuminate\Database\Seeder;
+            use Illuminate\Support\Facades\DB;
+            use Illuminate\Support\Facades\Hash;
+            use Faker\Factory as Faker;
+            
+            class UsersTableSeeder extends Seeder
+            {
+                public function run()
+                {
+                    DB::table('users')->insert([
+                        'name' => 'John Doe23',
+                        'email' => 'johndoe23@example.com',
+                        'password' => Hash::make('password223'),
+                        'google_id' => '11743319275979465222223',
+                        'github_id' => '8156345123',
+                        'username' => 'johnprovip23',
+                        'avatar' => 'storage/Blog/image/avatars/DRE07857 (1)_168897622923.jpg',
+                        'gender' => 1,
+            
+                    ]);
+                }
+            }
+        + Tạo nhiều dòng dữ liệu (khác nhau thì dùng Faker , không khác nhau thì cứ dùng như thế) . Dùng Factory : 
+            + sử dụng "fakerphp/faker": "^1.9" (hoặc cái này cũng có sẵn trong laravel rồi)
+                "require-dev": {
+                    "fakerphp/faker": "^1.9"
+                }
+        
+                => cài cái này thì ghi vào composer sau đó chạy lệnh : composer update
+
+            UsersTableSeeder.php : 
+            <?php
+            namespace Database\Seeders;
+
+            use Illuminate\Database\Seeder;
+            use Illuminate\Support\Facades\DB;
+            use Illuminate\Support\Facades\Hash;
+            use Faker\Factory as Faker;
+
+            class UsersTableSeeder extends Seeder
+            {
+                public function run()
+                {
+                    \App\Models\User::factory(3)->create();
+                }
+            }
+            
+            + bloglaravel\database\factories\UserFactory.php sẽ tương ứng với Model User 
+                + UserFactory.php
+                <?php
+                    namespace Database\Factories;
+        
+                    use App\Models\User;
+                    use Illuminate\Database\Eloquent\Factories\Factory;
+                    use Illuminate\Support\Str;
+                    use Illuminate\Support\Facades\Hash;
+        
+                    class UserFactory extends Factory
+                    {
+                        protected $model = User::class;
+        
+                        public function definition()
+                        {
+                            return [
+                                'name' => $this->faker->name,
+                                'email' => $this->faker->unique()->safeEmail,
+                                'password' => Hash::make('password'),
+                                'google_id' => $this->faker->randomNumber(9),
+                                'github_id' => $this->faker->randomNumber(8),
+                                'username' => $this->faker->userName,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                                'email_verified_at' => now(),
+                                'avatar' => 'storage/Blog/image/avatars/' . $this->faker->image('public/storage/Blog/image/avatars', 200, 200, null, false),
+                                'gender' => $this->faker->numberBetween(0, 1),
+                            ];
+        
+                        }
+                    }
+        + 'avatar' => 'storage/Blog/image/avatars/' . $this->faker->image('public/storage/Blog/image/avatars', 200, 200, null, false),
+            => Tạo ảnh lưu vào folder sau đó lấy đường dẫn lưu vào database . 
+
+    + Chạy Seeder:
+        + Chạy 1 file :         
+            > php artisan db:seed --class=UsersTableSeeder
+        
+        + Chạy nhiều file cùng lúc 
+            > php artisan db:seed --class=Seeder1Seeder,Seeder2Seeder
+        
+    + Để tạo ra 10 mẫu dữ liệu khác biệt nhau thì ta làm như sau : 
+        + Để sử dụng Faker để tạo ra 10 mẫu dữ liệu khác nhau cho bảng users, bạn cần thực hiện các bước sau:
+        + Đảm bảo rằng bạn đã cài đặt gói Faker trong dự án Laravel của mình bằng cách thêm dòng sau vào tệp composer.json:
+
+
+    + Ex : Article : 
+        + php artisan make:seeder ArticlesTableSeeder
+        + bloglaravel\database\seeders\ArticlesTableSeeder.php : 
+            <?php
+                namespace Database\Seeders;
+        
+                use Illuminate\Database\Seeder;
+                use Illuminate\Support\Facades\DB;
+                use Illuminate\Support\Facades\Hash;
+                use Faker\Factory as Faker;
+        
+                class ArticlesTableSeeder extends Seeder
+                {
+                    /**
+                    * Run the database seeds.
+                    *
+                    * @return void
+                    */
+                    public function run()
+                    {
+                        \App\Models\Article::factory(3)->create();
+                    }
+                }
+
+        + Tạo file bloglaravel\database\factories\ArticleFactory.php : 
+            <?php
+
+                namespace Database\Factories;
+
+                use App\Models\Article;
+                use App\Models\User;
+                use Illuminate\Database\Eloquent\Factories\Factory;
+                use Illuminate\Support\Str;
+
+                class ArticleFactory extends Factory
+                {
+                    /**
+                    * The name of the factory's corresponding model.
+                    *
+                    * @var string
+                    */
+                    protected $model = Article::class;
+
+                    /**
+                    * Define the model's default state.
+                    *
+                    * @return array
+                    */
+                    public function definition()
+                    {
+                        $userIds = User::pluck('id')->toArray();
+
+                        return [
+                            'id_user' => $this->faker->randomElement($userIds),
+                            'title' => $this->faker->sentence,
+                            'content' => $this->faker->paragraph,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
+                }
+
+        + php artisan db:seed --class=ArticlesTableSeeder
+
+-----------------------------------------------Database relationship: one to one, one to many, ...---------------------------------------------------------------------
+Trong Laravel, có nhiều loại quan hệ giữa các bảng trong cơ sở dữ liệu, bao gồm:
+
+One-to-One Relationship (Quan hệ một một): Một bảng có một liên kết đến một bảng khác dựa trên một cặp khóa duy nhất.
+One-to-Many Relationship (Quan hệ một nhiều): Một bảng có nhiều liên kết đến một bảng khác thông qua một cặp khóa.
+Many-to-Many Relationship (Quan hệ nhiều nhiều): Nhiều bảng có thể có nhiều liên kết đến các bảng khác, thông qua một bảng trung gian.
+Has-Many-Through Relationship (Quan hệ một nhiều qua): Một bảng có thể có nhiều liên kết đến một bảng khác thông qua một bảng trung gian.
+Polymorphic Relationship (Quan hệ đa hình): Một bảng có thể có nhiều liên kết đến nhiều bảng khác, sử dụng một cột id và type.
+Many-to-Many Polymorphic Relationship (Quan hệ nhiều nhiều đa hình): Kết hợp quan hệ nhiều nhiều và đa hình, cho phép nhiều bảng tham gia quan hệ.
+Inverse Relationship (Quan hệ nghịch đảo): Quan hệ ngược của một quan hệ đã định nghĩa.
+
+Ví dụ về một số quan hệ trong Laravel:
+
+One-to-One Relationship:
+class User extends Model {
+    public function phone() {
+        return $this->hasOne(Phone::class);
+    }
+}
+class Phone extends Model {
+    public function user() {
+        return $this->belongsTo(User::class);
+    }
+}
+
+One-to-Many Relationship:
+class User extends Model {
+    public function posts() {
+        return $this->hasMany(Post::class);
+    }
+}
+class Post extends Model {
+    public function user() {
+        return $this->belongsTo(User::class);
+    }
+}
+
+Many-to-Many Relationship:
+class User extends Model {
+    public function roles() {
+        return $this->belongsToMany(Role::class);
+    }
+}
+
+class Role extends Model {
+    public function users() {
+        return $this->belongsToMany(User::class);
+    }
+}
+
+Has-Many-Through Relationship:
+class Country extends Model {
+    public function posts() {
+        return $this->hasManyThrough(Post::class, User::class);
+    }
+}
+
+Polymorphic Relationship:
+class Comment extends Model {
+    public function commentable() {
+        return $this->morphTo();
+    }
+}
+class Post extends Model {
+    public function comments() {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+}
+class Video extends Model {
+    public function comments() {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+}
+
+Many-to-Many Polymorphic Relationship:
+class Tag extends Model {
+    public function posts() {
+        return $this->morphedByMany(Post::class, 'taggable');
+    }
+
+    public function videos() {
+        return $this->morphedByMany(Video::class, 'taggable');
+    }
+}
+
+class Post extends Model {
+    public function tags() {
+        return $this->morphToMany(Tag::class, 'taggable');
+    }
+}
+
+class Video extends Model {
+    public function tags() {
+        return $this->morphToMany(Tag::class, 'taggable');
+    }
+}
+Đây chỉ là một số ví dụ về các quan hệ cơ bản trong Laravel. Mỗi loại quan hệ có cách sử dụng và định nghĩa riêng biệt, tùy thuộc vào cấu trúc dữ liệu của bạn.
+        
+------------------------------Validation Quickstart, Form Request, Custom Rule...------------------------------
+Validation Quickstart: (kiến thức cũ)
+    + Laravel cung cấp cách tiếp cận dễ dàng để thực hiện validation cho dữ liệu gửi từ form bằng cách sử dụng hàm validate() hoặc sử dụng lớp Validator.
+    Sử dụng hàm validate() trong Controller:
+    public function store(Request $request)
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|max:255',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|confirmed|min:6',
+        ]);
+
+        // ... Xử lý dữ liệu
+    }
+
+    Sử dụng lớp Validator:
+    use Illuminate\Support\Facades\Validator;
+
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|max:255',
+        'email' => 'required|email|unique:users',
+        'password' => 'required|confirmed|min:6',
+    ]);
+
+
+    if ($validator->fails()) {
+        return redirect('register')
+                    ->withErrors($validator)
+                    ->withInput();
+        // => Ở đây có thể in lỗi ra 
+    }
+
+    <!-- Hoặc như dưới đây -->
+    if ($validator->fails()) {
+        foreach ($validator->errors()->all() as $error) {
+            Toastr::error($error);
+        }
+    }
+    // ... Xử lý dữ liệu
+
+----------------------------------
+Form Request:
+    Form Request là một cách tốt để tách logic validation ra khỏi Controller và giữ cho Controller trở nên gọn gàng hơn. Để tạo một Form Request, bạn có thể sử dụng lệnh Artisan như sau:
+    > php artisan make:request StoreUserRequest
+
+    Sau đó, trong StoreUserRequest.php:
+        public function authorize()
+        {
+            return true;
+        }
+        
+        public function rules()
+        {
+            return [
+                'name' => 'required|max:255',
+                'email' => 'required|email|unique:users',
+                'password' => 'required|confirmed|min:6',
+            ];
+        }
+
+        public function withValidator($validator)
+        {
+            if ($validator->fails()) {
+                foreach ($validator->errors()->all() as $error) {
+                    Toastr::error($error);
+                }
+            }
+        }
+
+    Sau đó, trong Controller:
+        public function store(StoreUserRequest $request)
+        {
+            // ...
+        }
+
+----------------------------------
+Custom Rule: (Mới)
+    + Nếu bạn muốn áp dụng validation logic phức tạp hơn, bạn có thể tạo Custom Rule.
+    + Tạo Custom Rule:
+        + php artisan make:rule Uppercase
+        
+        + Trong Uppercase.php:
+            public function passes($attribute, $value)
+            {
+                return strtoupper($value) === $value;
+            }
+
+            public function message()
+            {
+                return 'The :attribute must be in uppercase.';
+            }
+
+        + Sử dụng Custom Rule:
+
+            use App\Rules\Uppercase;
+            $validatedData = $request->validate([
+                'name' => ['required', new Uppercase],
+            ]);
+
+            Hoặc sử dụng trong Form Request:
+            public function rules()
+            {
+                return [
+                    'name' => ['required', new Uppercase],
+                ];
+            }
+            Nhớ rằng, các Custom Rule cũng có thể nhận thêm các tham số để tùy chỉnh hành vi validation.
+                + Ví dụ, bạn có thể tạo một Custom Rule để kiểm tra xem một số có lớn hơn một số khác đã được truyền vào hay không:
+                    + Tạo Custom Rule:
+                        + php artisan make:rule GreaterThanAnotherField
+                        + Sau đó, trong GreaterThanAnotherField.php:
+                            use Illuminate\Contracts\Validation\Rule;
+
+                            class GreaterThanAnotherField implements Rule
+                            {
+                                protected $otherField;
+
+                                public function __construct($otherField)
+                                {
+                                    $this->otherField = $otherField;
+                                }
+
+                                public function passes($attribute, $value)
+                                {
+                                    return $value > $this->otherField;
+                                }
+
+                                public function message()
+                                {
+                                    return "The :attribute must be greater than {$this->otherField}.";
+                                }
+                            }
+
+                    + Sử dụng Custom Rule với tham số:
+                        use App\Rules\GreaterThanAnotherField;
+
+                        $otherFieldValue = 10; // Giá trị của trường khác
+                        $validatedData = $request->validate([
+                            'number' => ['required', new GreaterThanAnotherField($otherFieldValue)],
+                        ]);
+
+                    + Hoặc sử dụng trong Form Request:
+                        public function rules()
+                        {
+                            $otherFieldValue = 10; // Giá trị của trường khác
+                            return [
+                                'number' => ['required', new GreaterThanAnotherField($otherFieldValue)],
+                            ];
+                        }
+
+                => Như vậy, bạn có thể tùy chỉnh cách tham số được sử dụng trong Custom Rule để đáp ứng nhu cầu của từng tình huống validation.
+
+----------------------------------
+
+
+
+
+
+

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\Uppercase;
 use Illuminate\Foundation\Http\FormRequest;
 use Brian2694\Toastr\Facades\Toastr;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,8 @@ class RequestUpdateInfor extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required',
+            // 'name' => 'required',
+            'name' => ['required', new Uppercase],
             'username' => 'required|unique:users,username,'.Auth::user()->id,
             'email' => 'required|email|unique:users,email,'.Auth::user()->id,
             'gender' => 'required',
