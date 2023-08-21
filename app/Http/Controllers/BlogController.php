@@ -9,6 +9,7 @@ use App\Models\Comment;
 use App\Models\User;
 use Brian2694\Toastr\Facades\Toastr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class BlogController extends Controller
@@ -62,6 +63,7 @@ class BlogController extends Controller
         ]);
         if ($article) {
             Toastr::success('Thêm bài viết thành công!');
+            Cache::forget('articles');
             return redirect()->back(); // Thay 'articles.index' bằng tên route hiển thị danh sách bài viết
         } else {
             Toastr::error('Thêm bài viết thất bại!');
@@ -86,6 +88,7 @@ class BlogController extends Controller
         ]);
         if ($status) {
             Toastr::success('Cập nhật bài viết bài viết thành công!');
+            Cache::forget('articles');
             return redirect()->back()->withInput(); // Thay 'articles.index' bằng tên route hiển thị danh sách bài viết
         } else {
             Toastr::error('Cập nhật bài viết bài viết thất bại!');
@@ -110,6 +113,7 @@ class BlogController extends Controller
             // Xóa bài viết
             $article->delete();
             Toastr::success('Xóa bài viết thành công !');
+            Cache::forget('articles');
             return redirect()->back();
         } else {
             Toastr::error('Bạn không có quyền xóa bài viết !');

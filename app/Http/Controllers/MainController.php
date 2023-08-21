@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class MainController extends Controller
 {
@@ -47,11 +48,15 @@ class MainController extends Controller
         //     $articles[$key]->comments = $comments;
         //     // dd($comments);
         // }
-        $articles = Article::join('users', 'users.id', '=', 'articles.id_user')
-            ->select('articles.*', 'users.*', 'articles.id as id_article', 'users.id as id_user')
-            ->withCount('commentsCount') // chú ý withCount phải bỏ sau select
-            ->orderBy('articles.id','DESC')
-            ->paginate(6);
+
+        $articles = Cache::remember('articles', 60, function () {
+            $articles = Article::join('users', 'users.id', '=', 'articles.id_user')
+                ->select('articles.*', 'users.*', 'articles.id as id_article', 'users.id as id_user')
+                ->withCount('commentsCount') // chú ý withCount phải bỏ sau select
+                ->orderBy('articles.id','DESC')
+                ->paginate(6);
+            return $articles;
+        });
 
         foreach ($articles as $article) {
             $comments = Comment::where('id_article', $article->id_article)

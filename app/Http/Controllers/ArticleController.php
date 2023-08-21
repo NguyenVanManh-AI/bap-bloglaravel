@@ -8,17 +8,22 @@ use App\Models\User;
 use Brian2694\Toastr\Facades\Toastr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class ArticleController extends Controller
 {
+
     public function all(Request $request){
-        $articles = Article::join('users', 'articles.id_user', '=', 'users.id')
-        ->select('articles.*', 'users.name') // nếu không có as thì mặc định nó sẽ là name 
-        // ->select('articles.*', 'users.name as author') // đặt lại name cho nó  
-        // ->select('articles.*', 'users.id') // giả sử muốn lấy ra id của users thì phải đặt lại name cho nó 
-        // vì cả article và users đều có id 
-        ->orderBy('articles.id', 'desc') // Sắp xếp giảm dần theo article.id (mới nhất lên đầu)
-        ->paginate(2);
+        $articles = Cache::remember('articles', 60, function () {
+            $articles = Article::join('users', 'articles.id_user', '=', 'users.id')
+            ->select('articles.*', 'users.name') // nếu không có as thì mặc định nó sẽ là name 
+            // ->select('articles.*', 'users.name as author') // đặt lại name cho nó  
+            // ->select('articles.*', 'users.id') // giả sử muốn lấy ra id của users thì phải đặt lại name cho nó 
+            // vì cả article và users đều có id 
+            ->orderBy('articles.id', 'desc') // Sắp xếp giảm dần theo article.id (mới nhất lên đầu)
+            ->paginate(2);
+            return $articles;
+        });
         return view('article.Index',['articles' => $articles]);
     }
 

@@ -596,6 +596,7 @@ Ví dụ dễ hiểu về Caching :
         Tuy nhiên, hãy cẩn thận khi sử dụng caching để đảm bảo rằng dữ liệu luôn được cập nhật đúng và không gây ra sự cố không mong muốn.
 
 ------------------------------Schedule Job và Queue------------------------------
+
 Schedule job (lên lịch công việc) và queue (hàng đợi)
 
 => Schedule Job và Queue là hai khái niệm quan trọng trong Laravel liên quan đến quản lý các tác vụ chạy dưới nền hoặc theo lịch trình. 
@@ -619,101 +620,181 @@ Tóm lại, Schedule Job dùng để thực hiện các tác vụ định kỳ t
     => chính vì thế tác vụ nào lâu nên cho vào hàng đợi)
 
 + Ví dụ sử dụng Schedule Job để gửi mail hàng ngày : 
-    + Để thực hiện việc gửi email hàng ngày cho tất cả các địa chỉ email trong bảng "users", bạn có thể sử dụng Laravel's Schedule và Mail. 
-    Dưới đây là ví dụ cụ thể về cách làm điều này:
 
-    + Tạo một Job để Gửi Email:
-        + Đầu tiên, bạn cần tạo một job để thực hiện việc gửi email. Hãy tạo một job bằng câu lệnh sau:
-        + php artisan make:job SendDailyEmail
+    + Cách 1 : Dùng Jobs : 
+        + Để thực hiện việc gửi email hàng ngày cho tất cả các địa chỉ email trong bảng "users", bạn có thể sử dụng Laravel's Schedule và Mail. 
+        Dưới đây là ví dụ cụ thể về cách làm điều này:
 
-        + Sau đó, mở file app/Jobs/SendDailyEmail.php và định nghĩa logic gửi email trong hàm handle():
-            use App\Models\User;
-            use Illuminate\Bus\Queueable;
-            use Illuminate\Contracts\Queue\ShouldQueue;
-            use Illuminate\Foundation\Bus\Dispatchable;
-            use Illuminate\Queue\InteractsWithQueue;
-            use Illuminate\Queue\SerializesModels;
-            use Illuminate\Support\Facades\Mail;
-            use App\Mail\DailyEmail;
+        + Tạo một Job để Gửi Email:
+            + Đầu tiên, bạn cần tạo một job để thực hiện việc gửi email. Hãy tạo một job bằng câu lệnh sau:
+            + php artisan make:job SendDailyEmail
 
-            class SendDailyEmail implements ShouldQueue
-            {
-                use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
-                public function handle()
-                {
-                    $users = User::all();
-
-                    foreach ($users as $user) {
-                        Mail::to($user->email)->send(new DailyEmail($user));
-                    }
-                }
-            }
-
-        + Tạo Mailable:
-            + Bạn cần tạo một Mailable để định dạng nội dung email. Hãy tạo một Mailable bằng câu lệnh sau:
-            + php artisan make:mail DailyEmail
-            + Sau đó, trong file app/Mail/DailyEmail.php, bạn có thể định nghĩa nội dung email:
+            + Sau đó, mở file app/Jobs/SendDailyEmail.php và định nghĩa logic gửi email trong hàm handle():
                 use App\Models\User;
                 use Illuminate\Bus\Queueable;
                 use Illuminate\Contracts\Queue\ShouldQueue;
-                use Illuminate\Mail\Mailable;
+                use Illuminate\Foundation\Bus\Dispatchable;
+                use Illuminate\Queue\InteractsWithQueue;
                 use Illuminate\Queue\SerializesModels;
+                use Illuminate\Support\Facades\Mail;
+                use App\Mail\DailyEmail;
 
-                class DailyEmail extends Mailable
+                class SendDailyEmail implements ShouldQueue
                 {
-                    use Queueable, SerializesModels;
+                    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-                    public $user;
-
-                    public function __construct(User $user)
+                    public function handle()
                     {
-                        $this->user = $user;
-                    }
+                        $users = User::all();
 
-                    public function build()
-                    {
-                        return $this->markdown('emails.daily', ['user' => $this->user]);
+                        foreach ($users as $user) {
+                            Mail::to($user->email)->send(new DailyEmail($user));
+                        }
                     }
                 }
 
-        + Định lịch gửi email hàng ngày:
-            + Mở file app/Console/Kernel.php và thêm đoạn code trong phương thức schedule():
+            + Tạo Mailable:
+                + Bạn cần tạo một Mailable để định dạng nội dung email. Hãy tạo một Mailable bằng câu lệnh sau:
+                + php artisan make:mail DailyEmail
+                + Sau đó, trong file app/Mail/DailyEmail.php, bạn có thể định nghĩa nội dung email:
+                    use App\Models\User;
+                    use Illuminate\Bus\Queueable;
+                    use Illuminate\Contracts\Queue\ShouldQueue;
+                    use Illuminate\Mail\Mailable;
+                    use Illuminate\Queue\SerializesModels;
+
+                    class DailyEmail extends Mailable
+                    {
+                        use Queueable, SerializesModels;
+
+                        public $user;
+
+                        public function __construct(User $user)
+                        {
+                            $this->user = $user;
+                        }
+
+                        public function build()
+                        {
+                            return $this->markdown('emails.daily', ['user' => $this->user]);
+                        }
+                    }
+
+            + Định lịch gửi email hàng ngày:
+                + Mở file app/Console/Kernel.php và thêm đoạn code trong phương thức schedule():
+                    use App\Jobs\SendDailyEmail;
+
+                    protected function schedule(Schedule $schedule)
+                    {
+                        $schedule->job(new SendDailyEmail)->daily();
+                    }
+            + Tạo View cho Email:
+                + Trong thư mục resources/views/emails, tạo một file daily.blade.php để định dạng email.
+            
+            + Cuối cùng, chạy các lệnh sau:
+                php artisan queue:work   (mỗi lệnh chạy một terminal)
+                php artisan schedule:run (mỗi lệnh chạy một terminal)
+
+            + Laravel sẽ tự động gửi email hàng ngày cho tất cả các địa chỉ email trong bảng "users".
+
+        
+        + Thiết lập ngày và giờ khác : 
+            + Mở file app/Console/Kernel.php và thay thế phương thức daily() bằng dailyAt('08:00'):
                 use App\Jobs\SendDailyEmail;
 
                 protected function schedule(Schedule $schedule)
                 {
-                    $schedule->job(new SendDailyEmail)->daily();
+                    $schedule->job(new SendDailyEmail)->dailyAt('08:00');
                 }
-        + Tạo View cho Email:
-            + Trong thư mục resources/views/emails, tạo một file daily.blade.php để định dạng email.
+
         
-        + Cuối cùng, chạy các lệnh sau:
-            php artisan queue:work
-            php artisan schedule:run
+            + Mỗi phút : $schedule->job(new SendDailyEmail)->everyMinute();
+            + Mỗi giây : $schedule->job(new SendDailyEmail)->everySecond();
+            + Mỗi giờ  : $schedule->job(new SendDailyEmail)->hourly();
+            + Mỗi tuần (vào thứ 2 lúc 8h) : $schedule->job(new SendDailyEmail)->weeklyOn(1, '8:00');
+            + Mỗi tháng (ngày 1 lúc 8h) : $schedule->job(new SendDailyEmail)->monthlyOn(1, '8:00');
+            + Mỗi năm (ngày 1 tháng 1 lúc 8h) : $schedule->job(new SendDailyEmail)->yearlyOn(1, 1, '8:00');
 
-        + Laravel sẽ tự động gửi email hàng ngày cho tất cả các địa chỉ email trong bảng "users".
+        + Nhớ rằng, để kích hoạt các lịch trình này, bạn cần chạy lệnh php artisan schedule:run.
 
-    
-    + Thiết lập ngày và giờ khác : 
-        + Mở file app/Console/Kernel.php và thay thế phương thức daily() bằng dailyAt('08:00'):
+        + Tham khảo thêm về Schedule Command : https://therealprogrammer.com/laravel-8-cron-job-task-scheduling-tutorial/ 
+        + Nhập lệnh : php artisan => có thể xem toàn bộ thông tin của project trong đó có cả những schedule và queue 
+
+    + Cách 2 : Dùng Command : 
+        + php artisan make:command SendMail
+        + bloglaravel\app\Console\Commands\SendMail.php : 
+            <?php
+
+                namespace App\Console\Commands;
+
+                use App\Models\User;
+                use Illuminate\Console\Command;
+                use Illuminate\Support\Facades\Mail;
+                use App\Mail\DailyEmail;
+
+                class SendMail extends Command
+                {
+                    // protected $signature = 'command:name';   
+                    protected $signature = 'users:sendmail';    <= Đây là lệnh command 
+
+                    protected $description = 'Send mail to all users by running this command';
+
+                    public function __construct()
+                    {
+                        parent::__construct();
+                    }
+
+                    public function handle()
+                    {
+                        $users = User::all();
+                        foreach ($users as $user) {
+                            Mail::to($user->email)->send(new DailyEmail($user));
+                        }
+                        // return 0;
+                    }
+                }
+
+        + Sau đó ta nhập : php artisan => sẽ thấy lệnh 'users:sendmail' cùng dòng mô tả 'Send mail to all users by running this command'
+        + bloglaravel\app\Console\Kernel.php
+            <?php
+
+            namespace App\Console;
+            
+            use Illuminate\Console\Scheduling\Schedule;
+            use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
             use App\Jobs\SendDailyEmail;
-
-            protected function schedule(Schedule $schedule)
+            
+            class Kernel extends ConsoleKernel
             {
-                $schedule->job(new SendDailyEmail)->dailyAt('08:00');
+                protected $commands = [
+                    Commands\SendMail::class,
+                ];
+            
+                protected function schedule(Schedule $schedule)
+                {
+                    $schedule->command('users:sendmail')->everyMinute(); // thực hiện lệnh command 
+                    // $schedule->command('users:sendmail')->cron('* * * * *'); // thực hiện lệnh command 
+                    // $schedule->command('users:sendmail')->hourly(); // thực hiện lệnh command 
+                    // $schedule->command('minute:update')->hourly();
+                    // $schedule->job(new SendDailyEmail)->daily();
+                    // $schedule->job(new SendDailyEmail)->everyMinute(); // Mỗi phút  
+                    // $schedule->job(new SendDailyEmail)->everySecond(); // Mỗi giây 
+                    // $schedule->job(new SendDailyEmail)->hourly(); // Mỗi giờ 
+                    // $schedule->job(new SendDailyEmail)->weeklyOn(1, '8:00'); // Mỗi tuần (vào thứ 2 lúc 8h) 
+                    // $schedule->job(new SendDailyEmail)->monthlyOn(1, '8:00'); // Mỗi tháng (ngày 1 lúc 8h) 
+                    // $schedule->job(new SendDailyEmail)->yearlyOn(1, 1, '8:00'); // Mỗi năm (ngày 1 tháng 1 lúc 8h) 
+                }
+            
+                protected function commands()
+                {
+                    $this->load(__DIR__.'/Commands');
+            
+                    require base_path('routes/console.php');
+                }
             }
-
-    
-        + Mỗi phút : $schedule->job(new SendDailyEmail)->everyMinute();
-        + Mỗi giây : $schedule->job(new SendDailyEmail)->everySecond();
-        + Mỗi giờ  : $schedule->job(new SendDailyEmail)->hourly();
-        + Mỗi tuần (vào thứ 2 lúc 8h) : $schedule->job(new SendDailyEmail)->weeklyOn(1, '8:00');
-        + Mỗi tháng (ngày 1 lúc 8h) : $schedule->job(new SendDailyEmail)->monthlyOn(1, '8:00');
-        + Mỗi năm (ngày 1 tháng 1 lúc 8h) : $schedule->job(new SendDailyEmail)->yearlyOn(1, 1, '8:00');
-
-    + Nhớ rằng, để kích hoạt các lịch trình này, bạn cần chạy lệnh php artisan schedule:run.
-
+        
+        + Chạy lệnh : php artisan users:sendmail để thử nghiệm xem chạy ok chưa 
+        + Chạy lệnh : php artisan schedule:run
 
 + Ví dụ sử dụng Queue để cho vào hàng đợi, lấy ví dụ thực tế trong việc gửi mail cho nhiều người : 
     + Để thực hiện việc gửi email đến tất cả các địa chỉ email trong bảng người dùng (table users) bằng cách sử dụng Queue, 
@@ -792,4 +873,9 @@ Tóm lại, Schedule Job dùng để thực hiện các tác vụ định kỳ t
         Lưu ý rằng cấu hình hàng đợi có thể thay đổi tùy theo yêu cầu và môi trường của dự án của bạn. Hãy xem tài liệu chính thức của Laravel để biết thêm thông tin về cấu hình hàng đợi: https://laravel.com/docs/8.x/queues
 
 ------------------------------Relationships------------------------------
-1-n 
+
+
+
+
+
+
