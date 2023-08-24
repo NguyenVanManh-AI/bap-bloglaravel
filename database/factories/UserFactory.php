@@ -57,6 +57,5 @@ class UserFactory extends Factory
             'gender' => $this->faker->numberBetween(0, 1),
             // 'password' => Hash::make(Str::random(10)),
         ];
-
     }
 }

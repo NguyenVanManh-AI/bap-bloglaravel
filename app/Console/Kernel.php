@@ -25,12 +25,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('users:sendmail')->everyMinute(); // thực hiện lệnh command 
+        $schedule->command('users:sendmail')->everyMinute(); // thực hiện lệnh command 
         // $schedule->command('users:sendmail')->cron('* * * * *'); // thực hiện lệnh command 
         // $schedule->command('users:sendmail')->hourly(); // thực hiện lệnh command 
         // $schedule->command('minute:update')->hourly();
         // $schedule->job(new SendDailyEmail)->daily();
-        $schedule->job(new SendDailyEmail)->everyMinute(); // Mỗi phút  
+        // $schedule->job(new SendDailyEmail)->everyMinute(); // Mỗi phút  
         // $schedule->job(new SendDailyEmail)->everySecond(); // Mỗi giây 
         // $schedule->job(new SendDailyEmail)->hourly(); // Mỗi giờ 
         // $schedule->job(new SendDailyEmail)->weeklyOn(1, '8:00'); // Mỗi tuần (vào thứ 2 lúc 8h) 

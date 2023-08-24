@@ -41,10 +41,11 @@ class SendMail extends Command
      */
     public function handle()
     {
-        $users = User::all();
-        foreach ($users as $user) {
-            Mail::to($user->email)->send(new DailyEmail($user));
-        }
+        \Log::info('Executing command');
+        // $users = User::all();
+        // foreach ($users as $user) {
+        //     Mail::to($user->email)->send(new DailyEmail($user));
+        // }
         // return 0;
     }
 }

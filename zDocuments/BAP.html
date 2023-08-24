@@ -130,6 +130,7 @@ cho vào Service , lúc này , làm nào cũng dùng được .
                 }
             }
             
+            + Tạo file factory : php artisan make:factory UserFactory (có rồi thì không cần tạo nữa)
             + bloglaravel\database\factories\UserFactory.php sẽ tương ứng với Model User 
                 + UserFactory.php
                 <?php
@@ -201,6 +202,7 @@ cho vào Service , lúc này , làm nào cũng dùng được .
                     }
                 }
 
+        + php artisan make:factory ArticleFactory
         + Tạo file bloglaravel\database\factories\ArticleFactory.php : 
             <?php
 
@@ -873,9 +875,298 @@ Tóm lại, Schedule Job dùng để thực hiện các tác vụ định kỳ t
         Lưu ý rằng cấu hình hàng đợi có thể thay đổi tùy theo yêu cầu và môi trường của dự án của bạn. Hãy xem tài liệu chính thức của Laravel để biết thêm thông tin về cấu hình hàng đợi: https://laravel.com/docs/8.x/queues
 
 ------------------------------Relationships------------------------------
+php artisan make:migration create_users_table
+php artisan make:migration create_comments_table
+php artisan make:migration create_admins_table
+php artisan make:migration create_articles_table
+php artisan make:migration create_categories_table (số nhiều)
+php artisan make:migration create_products_table
 
 
 
+------------------------------Static------------------------------
+
+<?php
+
+namespace App\Repositories;
+
+use App\Models\Example;
+use App\Models\PasswordReset;
+
+/**
+ * Class ExampleRepository.
+ */
+class PasswordResetRepository extends BaseRepository implements PasswordResetInterface
+{
+    public function getModel()
+    {
+        return PasswordReset::class;
+    }
+
+    public static function findPasswordReset($email){
+        return (new self())->model
+        ->when($email, fn ($q) => $q->where('email', '=', $email))
+        ->first();
+    }
+
+    public static function updateToken($user, $token){
+        $user = (new self())->model->find($user->id);
+        $updateData = [
+            'token' => $token,
+        ];
+        $user->update($updateData);
+    }
+
+}
+
+=> Không khai báo thêm service mà từ UserService gọi đến PasswordResetRepository thì phải dùng phương thức static ' :: '
+    => $user = PasswordResetRepository::findPasswordReset($email);
+=> Các hàm đều phải thêm static 
+=> Dẫn đến các hàm trong PasswordResetRepository mà được gọi thì không được dùng $this như : 
+    public static function findPasswordReset($email){
+        return $this->model
+        ->when($email, fn ($q) => $q->where('email', '=', $email))
+        ->first();
+    }
+Mà phải là : 
+    public static function findPasswordReset($email){
+        return (new self())->model
+        ->when($email, fn ($q) => $q->where('email', '=', $email))
+        ->first();
+    }
 
 
+C:\laragon\www\intern-php\app\Services\UserService.php : 
+    public function forgotSend($email){
+        $token = Str::random(32);
+        $user = PasswordResetRepository::findPasswordReset($email);
+        if($user) PasswordResetRepository::updateToken($user, $token); 
+        ...
+    }
 
+C:\laragon\www\intern-php\app\Repositories\PasswordResetInterface.php
+    <?php
+
+    namespace App\Repositories;
+
+    interface PasswordResetInterface extends RepositoryInterface
+    {
+        public static function findPasswordReset($email);
+        public static function updateToken($user, $token);
+    }
+
+C:\laragon\www\intern-php\app\Repositories\PasswordResetRepository.php
+    <?php
+
+    namespace App\Repositories;
+
+    use App\Models\Example;
+    use App\Models\PasswordReset;
+
+    class PasswordResetRepository extends BaseRepository implements PasswordResetInterface
+    {
+        public function getModel()
+        {
+            return PasswordReset::class;
+        }
+
+        public static function findPasswordReset($email){
+            return (new self())->model
+            ->when($email, fn ($q) => $q->where('email', '=', $email))
+            ->first();
+        }
+
+        public static function updateToken($user, $token){
+            $user = (new self())->model->find($user->id);
+            $updateData = [
+                'token' => $token,
+            ];
+            $user->update($updateData);
+        }
+
+    }
+
+
+------------------------------Save file------------------------------
+public function saveAvatar(object $filter){
+    if ($filter->image) {
+        $image = $filter->image;
+        $filename =  pathinfo($image->getClientOriginalName(), PATHINFO_FILENAME) . '_' . time() . '.' . $image->getClientOriginalExtension();
+        $image->storeAs(UserEnum::PATH_FILE, $filename);
+        return UserEnum::PATH_FILE . $filename;
+    }
+}
+
+=> Nếu dùng StoreAs thì đặt lại tên 
+=> Nếu dùng Store thì nó tự đặt tên file cho mình
+
+------------------------------Save file------------------------------
+C:\laragon\www\intern-php\app\Providers\RepositoryServiceProvider.php : 
+        <?php
+
+        namespace App\Providers;
+
+        use App\Repositories\ExampleInterface;
+        use App\Repositories\ExampleRepository;
+        use App\Repositories\UserInterface;
+        use App\Repositories\UserRepository;
+        use App\Repositories\ArticleInterface;
+        use App\Repositories\ArticleRepository;
+        use App\Repositories\CommentInterface;
+        use App\Repositories\CommentRepository;
+        use Illuminate\Support\ServiceProvider;
+
+        class RepositoryServiceProvider extends ServiceProvider
+        {
+            /**
+            * Register services.
+            *
+            * @return void
+            */
+            public function register()
+            {
+                $this->app->bind(ExampleInterface::class, ExampleRepository::class);
+                $this->app->bind(UserInterface::class, UserRepository::class);
+                $this->app->bind(ArticleInterface::class, ArticleRepository::class);
+                $this->app->bind(CommentInterface::class, CommentRepository::class);
+                $this->app->bind(PasswordResetInterface::class, PasswordResetRepository::class);
+            }
+
+            /**
+            * Bootstrap services.
+            *
+            * @return void
+            */
+            public function boot()
+            {
+                //
+            }
+        }
+
+
+C:\laragon\www\intern-php\config\app.php
+    Khai báo : Tên App\Providers\RepositoryServiceProvider::class,
+
+
+------------------------------Database Transactions------------------------------
++ https://laravel.com/docs/10.x/database#database-transactions
+=> Khi mà đoạn code chứa truy vấn nhiều bản dữ liệu 
+=> Bọc ngoài bằng transaction
+
+    use Illuminate\Support\Facades\DB;
+    
+    DB::transaction(function () {
+        DB::update('update users set votes = 1');
+    
+        DB::delete('delete from posts');
+    });
+
+
+------------------------------Trong một Repository dùng một Repository khác------------------------------
+
+    $repo = resolve(BlogRepository::class); // resolve vào file Repository hiện tại 
+    $repo->method ...
+
+------------------------------------------------------------
+
+public function userLogin(RequestLogin $request)
+{
+    $request->validate([
+        'g-recaptcha-response' => ['required', new ReCaptcha]
+    ]);
+    $filter = (object) [
+        'email' => $request->email ?? '',
+        'password' => $request->password ?? '',
+    ];
+    return $this->userService->userLogin($filter);
+}
+
+=> ReCaptcha để ở ngay Controller thì lại được mà bỏ vào RequestLogin thì có tick vào capcha rồi hay không 
+thì nó đều báo là chưa được . 
+
+-----------------------------Tự động tăng trong migrate-------------------------------
+Trong migrate 
+    mà : $table->integer('id');
+        => id  không tự động tăng 
+    còn : $table->id(); mới tự động tăng 
+
+------------------------------------------------------------
+Trong Laravel, bạn có thể thực hiện việc sửa cột id của một bảng từ $table->integer('id'); thành $table->id(); bằng cách sử dụng một câu lệnh artisan để tạo một migration và sau đó chạy migration này. Dưới đây là cách bạn có thể thực hiện điều này:
+
+Bước 1: Tạo migration mới
+Mở terminal và chạy lệnh sau để tạo một migration mới:
+
+bash
+Copy code
+php artisan make:migration update_id_column_in_table_name
+Trong đó update_id_column_in_table_name là tên của migration. Đảm bảo bạn thay thế table_name bằng tên thực sự của bảng mà bạn muốn thay đổi.
+
+Bước 2: Sửa nội dung của migration
+Mở tệp migration vừa tạo trong thư mục database/migrations và tìm dòng tạo cột id. Thay thế nó bằng $table->id();. Ví dụ:
+
+php
+Copy code
+// database/migrations/xxxx_xx_xx_xxxxxx_update_id_column_in_table_name.php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class UpdateIdColumnInTableName extends Migration
+{
+    public function up()
+    {
+        Schema::table('table_name', function (Blueprint $table) {
+            // Thay thế dòng dưới đây
+            // $table->integer('id');
+            // Bằng dòng sau đây
+            $table->id();
+        });
+    }
+
+    public function down()
+    {
+        Schema::table('table_name', function (Blueprint $table) {
+            // Đảm bảo bạn cung cấp logic để rollback thay đổi nếu cần
+            // Ví dụ: $table->dropColumn('id');
+        });
+    }
+}
+Bước 3: Chạy migration
+Sau khi bạn đã sửa migration, hãy chạy lệnh sau để áp dụng thay đổi vào cơ sở dữ liệu:
+
+bash
+Copy code
+php artisan migrate
+Lệnh trên sẽ chạy tất cả các migration chưa được chạy trước đó và áp dụng thay đổi cấu trúc cơ sở dữ liệu của bạn.
+
+Lưu ý rằng khi thay đổi cấu trúc của cột id, dữ liệu trong cột này không bị mất đi, vì chỉ là thay đổi cách cột được định nghĩa trong cơ sở dữ liệu.
+------------------------------------------------------------
+
+php artisan migrate:rollback --path=database/migrations/2023_08_24_095302_update_id_column_in_password_resets.php
+
+------------------------------------------------------------
+
+Mở copy cho một trang web => css : user-select: auto;
+
+-----------------------------Task-----------------------------
++ delete comment code css, js 
++ fix code convension css, js 
++ chuyển các style inline trong blade vào file css 
+
++ Queue Mail (forgot password, send mail welcome) (Tìm hiểu Redis Queue)
++ Thay đổi kiểu dữ liệu của một cột bằng migrate mà không reset lại dữ liệu (thêm cột thì ok rồi)
++ Ngoài liên kết 1-1 , 1-n , n-n thì laravel còn mấy loại liên kết nữa , đọc cho kĩ 
++ Bọc các đoạn lệnh logic bằng try catch , các đoạn lệnh query bằng transaction 
++ Xây dựng API (ảnh của các product thì dùng cột có dữ liệu là JSOn, không tách ra bảng riêng) 
+
+https://laravel.com/docs/10.x/database#database-transactions
+https://bap.udemy.com/course/php-with-laravel-for-beginners-become-a-master-in-laravel/learn/lecture/4978474#learning-tools
+https://towardsdatascience.com/create-your-first-cronjob-on-the-linux-server-74e2fdc76e78#:~:text=Cron%20is%20a%20system%20that,%2C%20daily%2C%20monthly%2C%20etc.
+https://www.freecodecamp.org/news/cron-jobs-in-linux/
+https://techsolutionstuff.com/post/how-to-send-bulk-mail-using-queue-in-laravel-8
+https://techsolutionstuff.com/post/laravel-9-send-bulk-mail-using-queue
+https://impulsivecode.com/change-column-type-using-laravel-migration/#Step_6_Change_the_Column_Type
+https://laravel.com/docs/10.x/eloquent-relationships 
+
+------------------------------------------------------------

@@ -29,7 +29,12 @@ Features
     + C:\Users\ADMIN\Downloads\ProLaravel\bloglaravel>composer require barryvdh/laravel-debugbar --dev
     + env : APP_DEBUG=true # tắt thanh https://github.com/barryvdh/laravel-debugbar thì chuyển thành false 
 
-
+    + Chú ý nếu như đã làm như trên mà nó không show ra thì vào chỉnh ở đây : 
+        intern-php\config\debugbar.php : 
+        + Tại dòng : 'enabled' => env('DEBUGBAR_ENABLED', true),
+            => Chuyển thành true 
+            => Câu lệnh này có nghĩa là nếu trong .env không có biến DEBUGBAR_ENABLED thì giá trị của nó sẽ là true 
+            còn có biến DEBUGBAR_ENABLED thì lấy giá trị của biến đó trong .env 
 
 =======================================================================
 
