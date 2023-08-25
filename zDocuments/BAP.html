@@ -166,6 +166,9 @@ cho vào Service , lúc này , làm nào cũng dùng được .
         + 'avatar' => 'storage/Blog/image/avatars/' . $this->faker->image('public/storage/Blog/image/avatars', 200, 200, null, false),
             => Tạo ảnh lưu vào folder sau đó lấy đường dẫn lưu vào database . 
 
+        + Quan trọng : 'avatar' => 'storage/blog/image/avatars/' . $this->faker->image('public/storage/blog/image/avatars', 200, 200, null, false),
+            => trong Laravel 9 câu lệnh này có thể tạo ra ảnh 
+
     + Chạy Seeder:
         + Chạy 1 file :         
             > php artisan db:seed --class=UsersTableSeeder
@@ -1170,3 +1173,201 @@ https://impulsivecode.com/change-column-type-using-laravel-migration/#Step_6_Cha
 https://laravel.com/docs/10.x/eloquent-relationships 
 
 ------------------------------------------------------------
+php artisan migrate : Chạy phần up() của một file
+php artisan migrate:rollback : Chạy phần down() của một file
+
+*Note : Muốn thay đổi gì mà không ảnh hưởng đến data trong database đều phải tạo thêm file mới 
+    => Code sự thay đổi trên các file đó và chạy file đó . 
+------------------------------------------------------------
+Thay đổi một cột từ 
+    Mục đích : 
+        id thường : $table->integer('id');
+        sang id tự động tăng : $table->id();
+
+    Cách làm : 
+        => Xóa cột đó đi sau đó tạo lại cột mới 
+
+    Thực hiện : 
+
+    > php artisan make:migration remove_id_from_password_resets --table=password_resets (Tạo file migrate mới)
+
+    Code vào file : 
+        <?php
+            use Illuminate\Database\Migrations\Migration;
+            use Illuminate\Database\Schema\Blueprint;
+            use Illuminate\Support\Facades\Schema;
+
+            return new class extends Migration
+            {
+                public function up()
+                {
+                    Schema::table('password_resets', function (Blueprint $table) {
+                        $table->dropColumn('id');
+                    });
+                }
+
+                public function down()
+                {
+                    Schema::table('password_resets', function (Blueprint $table) {
+                        $table->id();
+                    });
+                }
+            };
+
+    > php artisan migrate --path=/database/migrations/2023_08_25_015429_remove_id_from_password_resets.php
+        => Lệnh migrate bình thường sẽ chạy hàm up() trong một file 
+        => Phải chạy riêng file này, không nên chạy php artisan migrate
+        => Xóa cột này 
+
+    > php artisan migrate:rollback --path=/database/migrations/2023_08_25_015429_remove_id_from_password_resets.php
+        => Lệnh migrate:rollback sẽ chạy hàm down() trong một file 
+        => Chạy riêng file này, không được chạy migrate:rollback
+
+    *Nói thêm : php artisan make:migration remove_id_from_password_resets --table=password_resets
+        => Các phần còn lại đều quan trọng , riêng remove_id_from_password_resets thì cũng chỉ là cái tên . 
+
+------------------------------------------------------------
+Đổi kiểu dữ liệu của một cột . 
+    Ex : Chuyển cột email của bảng password_resets từ string sang int 
+        + Cài package 
+            "doctrine/dbal": "^3.6",
+        
+        + php artisan make:migration change_email_type_in_password_resets_table --table=password_resets
+        + Code vào file : 
+            <?php
+                use Illuminate\Database\Migrations\Migration;
+                use Illuminate\Database\Schema\Blueprint;
+                use Illuminate\Support\Facades\Schema;
+                
+                return new class extends Migration
+                {
+                    public function up()
+                    {
+                        Schema::table('password_resets', function (Blueprint $table) {
+                            $table->integer('email')->change();
+                        });
+                    }
+                
+                    public function down()
+                    {
+                        Schema::table('password_resets', function (Blueprint $table) {
+                            $table->string('email')->change();
+                        });
+                    }
+                };
+
+        + Chạy lệnh : 
+            > php artisan migrate --path=/database/migrations/2023_08_25_031041_change_email_type_in_password_resets_table.php
+
+        + Giả sử sau khi thay đổi sang int mà muốn về lại kiểu string hay text thì cứ sửa vào down() sau đó chạy lệnh rollback thôi 
+            > php artisan migrate:rollback --path=/database/migrations/2023_08_25_031041_change_email_type_in_password_resets_table.php
+
+------------------------------------------------------------
+Sử dụng Queue cho Send Mail Reset Password : 
+
+    + Đặt vấn đề : Bình thường ta code như này 
+        + UserService.php : (Hàm xử lí gửi mail)
+            public function forgotSend($email)
+            {
+                $token = Str::random(32);
+                $user = PasswordResetRepository::findPasswordReset($email);
+                if ($user) {
+                    PasswordResetRepository::updateToken($user, $token);
+                } else {
+                    PasswordResetRepository::createToken($email, $token);
+                }
+                Toastr::success('Send Mail Password Reset Success !');
+                $url = 'http://localhost:8000/forgot-form?token=' . $token;
+                Mail::to($email)->send(new ForgotPassword($url));     <== (hành động gửi mail)
+
+                return redirect()->back();
+            }
+
+    + Ta muốn cho hành động gửi mail này vào hàng đợi . 
+        => Ví dụ serve của ta chỉ có một cái , mà nhiều người truy cập từ nhiều client 
+        trên nhiều máy tính khác nhau => cùng forgot password 
+        => tải không kịp => lâu => đưa hành động gửi mail này vào hàng đợi . 
+        => người này gửi xong rồi mới đến người khác 
+        => đoạn code phía sau của hành động gửi mail của tất cả mọi người đều hoạt động bình thường 
+        như là không có hành động gửi mail vậy , vì hành động này đã được đưa vào hàng đợi Queue . 
+
+    + Cách làm : 
+        + Tạo file jobs : 
+            > php artisan make:job SendForgotPasswordEmail
+            + Code vào đó : 
+                <?php
+
+                    namespace App\Jobs;
+                    
+                    use Illuminate\Bus\Queueable;
+                    use Illuminate\Contracts\Queue\ShouldBeUnique;
+                    use Illuminate\Contracts\Queue\ShouldQueue;
+                    use Illuminate\Foundation\Bus\Dispatchable;
+                    use Illuminate\Queue\InteractsWithQueue;
+                    use Illuminate\Queue\SerializesModels;
+                    use App\Mail\ForgotPassword;
+                    use Illuminate\Support\Facades\Mail;
+                    use Illuminate\Support\Facades\Log;
+                    
+                    class SendForgotPasswordEmail implements ShouldQueue
+                    {
+                        use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+                    
+                        public $email;
+                        public $url;
+                        
+                        public function __construct($email, $url)
+                        {
+                            $this->email = $email;
+                            $this->url = $url;
+                        }
+                        
+                        public function handle()
+                        {
+                            $email = $this->email;
+                            $url = $this->url;
+                        
+                            // Các bước xử lý logic liên quan đến email và token
+                            Mail::to($email)->send(new ForgotPassword($url));
+                            info("Email sent to $email with URL: $url");
+                            Log::info("Email sent to $email with URL: $url");
+                    
+                        }
+                    }
+            
+            + Giải thích : Ghi vào lịch sử làm việc của queue vào file intern-php\storage\logs\laravel.log
+                + info("Email sent to $email with URL: $url");
+                + Log::info("Email sent to $email with URL: $url");
+
+                => Hai dòng lệnh này là như nhau , ta có thể gọi info() luôn cũng được 
+                mà có thể use thêm Log cũng được . 
+                Các dòng log này sẽ được ghi vào file laravel.log
+                => Ta xóa hết tất cả lịch sử trong file này , sau đó thực hiện forgot password 
+                    thì sẽ thấy nó ghi thêm mấy dòng này . (có thể chia màn hình làm hai để thấy nó ghi thêm trực tiếp cho trực quan)
+
+
+    + Sau đó sửa lại hàm forgotSend()
+        public function forgotSend($email)
+        {
+            $token = Str::random(32);
+            $user = PasswordResetRepository::findPasswordReset($email);
+            if ($user) {
+                PasswordResetRepository::updateToken($user, $token);
+            } else {
+                PasswordResetRepository::createToken($email, $token);
+            }
+            Toastr::success('Send Mail Password Reset Success !');
+            $url = 'http://localhost:8000/forgot-form?token=' . $token;
+            // Mail::to($email)->send(new ForgotPassword($url)); <= thay dòng này 
+            SendForgotPasswordEmail::dispatch($email, $url);  <= bằng dòng này 
+
+            return redirect()->back();
+        }
+
+    + Chạy lệnh để thực hiện hàng đợi : 
+        > php artisan queue:work
+        => Lệnh này sẽ chạy liên tục như lệnh 'php artisan serve' 
+        => Để liên tục lắng nghe nếu có hàng đợi thì nó thực hiện . 
+
+------------------------------------------------------------
+
