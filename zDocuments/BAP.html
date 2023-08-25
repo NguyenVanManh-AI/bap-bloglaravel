@@ -1178,7 +1178,7 @@ php artisan migrate:rollback : Chạy phần down() của một file
 
 *Note : Muốn thay đổi gì mà không ảnh hưởng đến data trong database đều phải tạo thêm file mới 
     => Code sự thay đổi trên các file đó và chạy file đó . 
-------------------------------------------------------------
+-----------------------------Thay đổi một cột từ id thường sang id tự động tăng-----------------------------
 Thay đổi một cột từ 
     Mục đích : 
         id thường : $table->integer('id');
@@ -1226,7 +1226,7 @@ Thay đổi một cột từ
     *Nói thêm : php artisan make:migration remove_id_from_password_resets --table=password_resets
         => Các phần còn lại đều quan trọng , riêng remove_id_from_password_resets thì cũng chỉ là cái tên . 
 
-------------------------------------------------------------
+-------------------------------Đổi kiểu dữ liệu của một cột-------------------------------
 Đổi kiểu dữ liệu của một cột . 
     Ex : Chuyển cột email của bảng password_resets từ string sang int 
         + Cài package 
@@ -1261,8 +1261,19 @@ Thay đổi một cột từ
 
         + Giả sử sau khi thay đổi sang int mà muốn về lại kiểu string hay text thì cứ sửa vào down() sau đó chạy lệnh rollback thôi 
             > php artisan migrate:rollback --path=/database/migrations/2023_08_25_031041_change_email_type_in_password_resets_table.php
+          
+-------------------------------Các khác , thay đổi một bảng mà không làm ảnh hưởng đến data của các bảng khác-------------------------------
+Hay     
+    + Chỉ reset lại dữ liệu của bảng đang chỉnh sửa 
+    + Không ảnh hưởng đến data của các bảng khác 
+    + Không cần tạo mới file 
 
-------------------------------------------------------------
+    + Giả sử bảng password_resets cần chỉnh sửa 
+        => Chạy lệnh : php artisan migrate:refresh --path=/database/migrations/2014_10_12_100000_create_password_resets_table.php
+        => Nó sẽ chạy rollback (down) sau đó migrate (up) lại 
+
+
+----------------------------------Sử dụng Queue cho Send Mail Reset Password ----------------------------------
 Sử dụng Queue cho Send Mail Reset Password : 
 
     + Đặt vấn đề : Bình thường ta code như này 
@@ -1370,4 +1381,187 @@ Sử dụng Queue cho Send Mail Reset Password :
         => Để liên tục lắng nghe nếu có hàng đợi thì nó thực hiện . 
 
 ------------------------------------------------------------
+Chú ý phải phân biệt rõ : 
+    + Schedule (Lập lịch) : 
+        + Đi với command 
+        + php artisan schedule:run => chạy toàn bộ lệnh được đăng kí trong Kernel.php  
+        + php artisan users:sendmail => chỉ chạy file tương ứng với lệnh được đăng kí 'users:sendmail'
 
+    + Queue (Hàng đợi) : 
+        + Đi với Jobs 
+        + php artisan queue:work
+
+------------------------------------------------------------
+php artisan serve --host=192.168.11.159
+=> mobile cũng truy cập vào được . 
+------------------------------------------------------------
+https://laravel.com/docs/9.x/eloquent-mutators
+
+
+-------------------------------Drive Queue-------------------------------
+    + Drive queue mặc định của laravel là sync
+        => Nó chỉ phù hợp khi code , còn khi ra sản phẩm rồi => nhiều người dùng 
+        => dùng drive khác => nhanh hơn 
+        
+    + Một số drive khác : database, redis, beanstalkd, và sqs
+
+    + intern-php\config\queue.php
+        'connections' => [
+
+            'sync' => [
+                'driver' => 'sync',
+            ],
+
+            'database' => [
+                'driver' => 'database',
+                'table' => 'jobs',
+                'queue' => 'default',
+                'retry_after' => 90,
+                'after_commit' => false,
+            ],
+
+            'beanstalkd' => [
+                'driver' => 'beanstalkd',
+                'host' => 'localhost',
+                'queue' => 'default',
+                'retry_after' => 90,
+                'block_for' => 0,
+                'after_commit' => false,
+            ],
+
+            'sqs' => [
+                'driver' => 'sqs',
+                'key' => env('AWS_ACCESS_KEY_ID'),
+                'secret' => env('AWS_SECRET_ACCESS_KEY'),
+                'prefix' => env('SQS_PREFIX', 'https://sqs.us-east-1.amazonaws.com/your-account-id'),
+                'queue' => env('SQS_QUEUE', 'default'),
+                'suffix' => env('SQS_SUFFIX'),
+                'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+                'after_commit' => false,
+            ],
+
+            'redis' => [
+                'driver' => 'redis',
+                'connection' => 'default',
+                'queue' => env('REDIS_QUEUE', 'default'),
+                'retry_after' => 90,
+                'block_for' => null,
+                'after_commit' => false,
+            ],
+
+        ],
+    
+    => chỉ có sync là dùng ngay luôn 
+    => còn lại muốn dùng thì phải cấu hình 
+
+-------------------------------Queue use drive Database-------------------------------
+
+Cách làm : 
+    > php artisan queue:table 
+        => để tạo migrations cho bảng jobs
+
+    > php artisan migrate --path=/database/migrations/2023_08_25_063317_create_jobs_table.php
+        => tạo ra bảng jobs ở database 
+
+    .env 
+        Trong file env sữa lại thành 
+        # QUEUE_CONNECTION=sync 
+        QUEUE_CONNECTION=database
+
+
+    + intern-php\app\Services\UserService.php : 
+
+        use Illuminate\Support\Facades\Log;
+        use Illuminate\Support\Facades\Queue;
+        public function forgotSend($email)
+        {
+            $token = Str::random(32);
+            $user = PasswordResetRepository::findPasswordReset($email);
+            if ($user) {
+                PasswordResetRepository::updateToken($user, $token);
+            } else {
+                PasswordResetRepository::createToken($email, $token);
+            }
+            Toastr::success('Send Mail Password Reset Success !');
+            $url = 'http://localhost:8000/forgot-form?token=' . $token;
+            Log::info("Add jobs to Queue , Email: $email with URL: $url");  
+
+            // Mail::to($email)->send(new ForgotPassword($url));     <= Không dùng Queue 
+            // SendForgotPasswordEmail::dispatch($email, $url);      <= Dùng Queue với drive 'sync'
+            Queue::push(new SendForgotPasswordEmail($email, $url));  <= Đưa vào hàng đợi (dùng drive database)
+
+            return redirect()->back();
+        }
+
+
+    + Chạy lệnh : php artisan queue:work
+
+    + Nói thêm (nếu dùng drive database thì file queue.php không cần sửa gì cả): 
+        intern-php\config\queue.php : 
+        'connections' => [
+            ...
+            'database' => [
+                'driver' => 'database',    <= tên drive 
+                'table' => 'jobs',         <= tên bảng trong database 
+                'queue' => 'default',      <= tên của queue, ta có thể đặt cái tên gì cũng được ví dụ : 'send_mail_forgot_password'
+                'retry_after' => 90,       <= 90 xác định thời gian (giây) sau khi mà các công việc thất bại sẽ được thử lại.
+                'after_commit' => false,   <= false xác định xem việc thêm công việc vào hàng đợi có thể hoãn lại sau khi commit transaction không. Nếu bạn muốn hoãn việc thêm công việc vào hàng đợi cho đến khi sau khi giao dịch được commit, bạn có thể đặt true.
+            ],
+            ...
+        ]
+
+Kết quả thu được : 
+    + Trong database sẽ có bảng jobs 
+        => Khi mà ta bấm gửi email forgot password 
+        => Thì một dòng dữ liệu sẽ được thêm vào bảng jobs của database : 
+
+            id    queue                      payload                                                                                                                                                                                                                                                                      attempts      reserved_at     available_at      created_at 
+            7     send_mail_forgot_password  {"uuid":"8fe24c75-caad-497b-a026-6592551a0d5e","displayName":"App\\Jobs\\SendForgotPasswordEmail","job":"Illuminate\\Queue\\CallQueuedHandler@call","maxTries":null,"maxExceptions":null,"failOnTimeout":false,"backoff":null,"timeout":null,"retryUntil":null," [...]       0             NULL            1692947448        1692947448
+
+            + id : tự động tăng 
+            + queue : là tên mình ghi vào file queue.php 
+            + còn lại các dữ liệu khác của cột khác sẽ được tự thêm vào 
+
+        => Dòng này sẽ được thêm và biến mất nhanh chóng , chính vì thế muốn quan xác thì khi bấm submit gửi mail xong 
+            thì phải click vào bảng jobs nhanh thì mới xem được dòng này 
+
+        => Khi jobs được thực hiện xong thì dòng dữ liệu tương ứng của jobs đó nằm trong bảng sẽ được xóa đi 
+        
+    + Ngoài ra khi dùng drive 'database'
+        => Thì ở terminal chạy lệnh 'php artisan queue:work' sẽ có thêm các dòng này : 
+
+            2023-08-25 06:49:36 App\Jobs\SendForgotPasswordEmail .................................. RUNNING
+            2023-08-25 06:49:39 App\Jobs\SendForgotPasswordEmail .......................... 3,380.14ms DONE
+            2023-08-25 06:50:13 App\Jobs\SendForgotPasswordEmail .................................. RUNNING
+            2023-08-25 06:50:14 App\Jobs\SendForgotPasswordEmail .......................... 1,538.84ms DONE
+            2023-08-25 06:50:29 App\Jobs\SendForgotPasswordEmail .................................. RUNNING
+
+        => Mỗi jobs đang thực hiện hay thực hiện xong thì nó sẽ in ra như này . 
+        => Ở đây thì chỉ có jobs SendForgotPasswordEmail nên nó chỉ in ra SendForgotPasswordEmail
+        => Có thêm cái khác nữa ví dụ SendMailWelCome thì nó cũng sẽ in ra như này . 
+    
+        + Ví dụ như ta tạo thêm jobs SendMailWelCome : Khi chạy 'php artisan queue:work' sẽ được 
+
+            2023-08-25 07:41:41 App\Jobs\SendForgotPasswordEmail ................................. RUNNING
+            2023-08-25 07:41:44 App\Jobs\SendForgotPasswordEmail ......................... 3,214.64ms DONE
+            2023-08-25 07:41:44 App\Jobs\SendMailWelCome ......................................... RUNNING
+            2023-08-25 07:41:46 App\Jobs\SendMailWelCome ................................. 1,400.86ms DONE 
+
+
+    + Nói thêm : 
+        + Do ta đang chạy lệnh 'php artisan queue:work' sẽ các hàng đợi được ghi vào table jobs trong database 
+            sẽ nhanh chóng được xóa khi thực hiện xong 
+        
+        => Ta không chạy lệnh này thì khi người dùng forgot password hay đăng kí thì các công việc gửi mail forgot password 
+            hay gửi mail welcome chào mừng sẽ được thêm vào table jobs NHƯNG MÀ SẼ CHƯA ĐƯỢC THỰC HIỆN 
+            => Dữ liệu sẽ vẫn còn đó cho đến khi ta chạy lệnh 'php artisan queue:work' 
+            thì hệ thống sẽ lấy ra các công việc trong bảng jobs và thực hiện nó . 
+
+        => Mặc khác, chính vì thế nên nếu muốn quan sát được dữ liệu được thêm vào bảng jobs 
+            => thì đừng chạy lệnh 'php artisan queue:work' 
+
+Ưu điểm : 
+    + Dễ thấy là ta không còn phải chờ giống như lúc trước nữa, vì bây giờ công việc đã được đưa vào hàng đợi . 
+    + Tốc độ tất nhiên là nhanh hơn .  
+
+------------------------------------------------------------
