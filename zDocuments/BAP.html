@@ -1,85 +1,20 @@
-- Template có sẵn : https://adminlte.io/themes/v3/pages/UI/general.html#
-- Cài Laragon ( cài tất cả các phiên bản laravel xem có bị lỗi gì không)
-    + https://laragon.org/docs/install.html
-    + README.md 
-        MySQL login*: 
-        user: root
-        password:
-        *The default username is 'root' and empty password
-        ----------------------------------------------------
-        Document Root:
-        C:\laragon\www
-        ----------------------------------------------------
-        Hotkey to open Terminal globally: 
-        CTRL+ALT+T
-        For more information, please visit: http://laragon.org
-        Thank you for using Laragon.
-        leokhoa@gmail.com
-
-    + Hoàn toàn giống Xampp chỉ là nó có thể thay đổi phiên bản thôi 
-        + Trang chủ : http://localhost/
-        + Mysql database cũng tương tự 
-        + 
-
-
------------------------------Service-----------------------
-Service 
-    Bạn đang nói đến Service trong thư mục app/Services. Thư mục app/Services thường được sử dụng để chứa các class dịch vụ tùy chỉnh của bạn, đây là một phần của cơ chế Dependency Injection trong Laravel.
-    Mục đích chính của việc sử dụng các class dịch vụ trong thư mục app/Services là để tách logic xử lý khỏi controllers và các phần khác trong ứng dụng. Điều này giúp mã của bạn trở nên dễ đọc hơn, dễ bảo trì hơn và dễ dàng kiểm thử.
-    Ví dụ, nếu bạn có một chức năng cần thực hiện một số xử lý phức tạp như gửi email, xử lý dữ liệu, gọi API bên ngoài, bạn có thể tạo một class dịch vụ trong thư mục app/Services để thực hiện các tác vụ này. Sau đó, bạn có thể tiêm nó vào controller hoặc bất kỳ nơi nào cần sử dụng thông qua Dependency Injection.
-    Ví dụ về cách sử dụng một class dịch vụ trong controller:
-
-    use App\Services\MyService;
-
-    class MyController extends Controller
-    {
-        protected $myService;
-
-        public function __construct(MyService $myService)
-        {
-            $this->myService = $myService;
-        }
-
-        public function index()
-        {
-            $data = $this->myService->getData();
-            // ...
-        }
-    }
-    Trong ví dụ trên, $myService là một instance của MyService class, và bạn có thể gọi các phương thức của class này để thực hiện các tác vụ cụ thể.
-    Điều này giúp bạn giữ cho logic của bạn được tách ra một cách rõ ràng và sẽ làm cho controllers của bạn trở nên nhẹ nhàng và dễ kiểm thử hơn.
-
-+ Mục đích của Service là 
-    + Tách phần code logic từ Controller ra để cho controller nhẹ nhàng hơn . 
-    + Nếu nhiều chỗ dùng lui dùng tới phần code đó => tách ra để ở service => controller nào cần thì bỏ vào . 
-
-+ Không có câu lệnh tạo file Service (tự tạo bằng tay)
-
-p12 
-Ví dụ về Service : 
-Service 
-    + C:\Users\ADMIN\Downloads\izisoft\p12nhadatexpress\app\Services\UserService.php
-
-Controllers 
-    + p12nhadatexpress\app\Http\Controllers\Admin\Report\Account\ReportCommentAccountController.php
-    + p12nhadatexpress\app\Http\Controllers\Admin\Comment\CommentController.php
-    + p12nhadatexpress\app\Http\Controllers\Admin\Comment\ReportCommentController.php
-    + p12nhadatexpress\app\Http\Controllers\Admin\Event\EventReportController.php
-    + p12nhadatexpress\app\Http\Controllers\Admin\PersonalPage\PersonalPageReportController.php
-    + ...
-
-=> Ví dụ hàm : $this->userService->blockUser => được dùng lại rất nhiều lần => tách ra khỏi Controller để
-cho vào Service , lúc này , làm nào cũng dùng được . 
-
-
------------------------------------------------Quản lý, tạo dữ liệu mẫu DB với migrate, seeder, factory---------------------------------------------------------------------
-+ Seeder và Factory 
-    + Tạo Seeder:
-        > php artisan make:seeder UsersTableSeeder
-    
-    + Có hai trường hợp : 
-        + Tạo một dòng dữ liệu 
-            + <?php
+- Template có sẵn : https://adminlte.io/themes/v3/pages/UI/general.html# - Cài Laragon ( cài tất cả các phiên bản laravel xem có bị lỗi gì không) + https://laragon.org/docs/install.html + README.md MySQL login*: user: root password: *The default username
+is 'root' and empty password ---------------------------------------------------- Document Root: C:\laragon\www ---------------------------------------------------- Hotkey to open Terminal globally: CTRL+ALT+T For more information, please visit: http://laragon.org
+Thank you for using Laragon. leokhoa@gmail.com + Hoàn toàn giống Xampp chỉ là nó có thể thay đổi phiên bản thôi + Trang chủ : http://localhost/ + Mysql database cũng tương tự + -----------------------------Service----------------------- Service Bạn đang
+nói đến Service trong thư mục app/Services. Thư mục app/Services thường được sử dụng để chứa các class dịch vụ tùy chỉnh của bạn, đây là một phần của cơ chế Dependency Injection trong Laravel. Mục đích chính của việc sử dụng các class dịch vụ trong thư
+mục app/Services là để tách logic xử lý khỏi controllers và các phần khác trong ứng dụng. Điều này giúp mã của bạn trở nên dễ đọc hơn, dễ bảo trì hơn và dễ dàng kiểm thử. Ví dụ, nếu bạn có một chức năng cần thực hiện một số xử lý phức tạp như gửi email,
+xử lý dữ liệu, gọi API bên ngoài, bạn có thể tạo một class dịch vụ trong thư mục app/Services để thực hiện các tác vụ này. Sau đó, bạn có thể tiêm nó vào controller hoặc bất kỳ nơi nào cần sử dụng thông qua Dependency Injection. Ví dụ về cách sử dụng
+một class dịch vụ trong controller: use App\Services\MyService; class MyController extends Controller { protected $myService; public function __construct(MyService $myService) { $this->myService = $myService; } public function index() { $data = $this->myService->getData();
+// ... } } Trong ví dụ trên, $myService là một instance của MyService class, và bạn có thể gọi các phương thức của class này để thực hiện các tác vụ cụ thể. Điều này giúp bạn giữ cho logic của bạn được tách ra một cách rõ ràng và sẽ làm cho controllers
+của bạn trở nên nhẹ nhàng và dễ kiểm thử hơn. + Mục đích của Service là + Tách phần code logic từ Controller ra để cho controller nhẹ nhàng hơn . + Nếu nhiều chỗ dùng lui dùng tới phần code đó => tách ra để ở service => controller nào cần thì bỏ vào .
++ Không có câu lệnh tạo file Service (tự tạo bằng tay) p12 Ví dụ về Service : Service + C:\Users\ADMIN\Downloads\izisoft\p12nhadatexpress\app\Services\UserService.php Controllers + p12nhadatexpress\app\Http\Controllers\Admin\Report\Account\ReportCommentAccountController.php
++ p12nhadatexpress\app\Http\Controllers\Admin\Comment\CommentController.php + p12nhadatexpress\app\Http\Controllers\Admin\Comment\ReportCommentController.php + p12nhadatexpress\app\Http\Controllers\Admin\Event\EventReportController.php + p12nhadatexpress\app\Http\Controllers\Admin\PersonalPage\PersonalPageReportController.php
++ ... => Ví dụ hàm : $this->userService->blockUser => được dùng lại rất nhiều lần => tách ra khỏi Controller để cho vào Service , lúc này , làm nào cũng dùng được . 
+-----------------------------------------------Quản lý, tạo dữ liệu mẫu DB với migrate,seeder, factory--------------------------------------------------------------------- 
++ Seeder và Factory + Tạo Seeder: > php artisan make:seeder UsersTableSeeder 
++ Có hai trường hợp : 
+        + Tạo một dòng dữ liệu +
+<?php
 
             namespace Database\Seeders;
             
@@ -1565,3 +1500,283 @@ Kết quả thu được :
     + Tốc độ tất nhiên là nhanh hơn .  
 
 ------------------------------------------------------------
+Nói thêm : Giả sử bây giờ muốn gửi 1000 cái mail cho 1 người 
+    => for 1000 cho 1000 công việc vào hàng đợi sau đó chạy lệnh là nó thực hiện 1000 lần. 
+
+for($i=0; $i<1000; $i++) {
+    Queue::push(new SendMailWelCome($user->email, $user->name));
+}
+=> Lưu 1000 lần gửi maill vào table jobs 
+=> Sau đó chạy lệnh 'php artisan queue:work' là nó sẽ gửi 1000 lần . 
+
+------------------------------------------------------------
+php artisan make:seeder UsersTableSeeder
+php artisan make:factory UserFactory
+php artisan db:seed --class=UsersTableSeeder
+php artisan db:seed --class=Seeder1Seeder,Seeder2Seeder
+php artisan make:seeder ArticlesTableSeeder
+php artisan make:factory ArticleFactory
+php artisan db:seed --class=ArticlesTableSeeder
+php artisan make:request StoreUserRequest
+php artisan make:rule Uppercase
+php artisan make:rule GreaterThanAnotherField
+php artisan view:cache
+php artisan config:cache
+php artisan make:job SendDailyEmail
+php artisan make:mail DailyEmail
+php artisan 
+php artisan make:command SendMail
+php artisan users:sendmail
+php artisan make:job SendEmailJob
+php artisan make:migration create_users_table
+php artisan make:migration create_comments_table
+php artisan make:migration create_categories_table (số nhiều)
+php artisan make:migration update_id_column_in_table_name
+php artisan migrate
+php artisan migrate:rollback --path=database/migrations/2023_08_24_095302_update_id_column_in_password_resets.php
+php artisan migrate
+php artisan migrate:rollback
+php artisan make:migration remove_id_from_password_resets --table=password_resets
+php artisan migrate
+php artisan make:migration remove_id_from_password_resets --table=password_resets
+php artisan make:migration change_email_type_in_password_resets_table --table=password_resets
+php artisan migrate:refresh --path=/database/migrations/2014_10_12_100000_create_password_resets_table.php
+php artisan make:job SendForgotPasswordEmail
+php artisan schedule:run
+php artisan users:sendmail
+php artisan serve --host=192.168.11.159
+php artisan queue:table
+php artisan migrate --path=/database/migrations/2023_08_25_063317_create_jobs_table.php
+php artisan queue:work
+php artisan make:migration add_phone_number_to_users --table=password_resets
+
+------------------------------------------------------------
+Laravel9 API 
+
++ Xem danh sách đã cài trong composer : composer show 
++ composer require tomfordrumm/jwt-auth:dev-develop (laravel9 thì này vẫn ok)
+    + ở bài viết này thì nó hướng dẫn nếu không cài tomfordrumm/jwt-auth thì cài php-open-source-saver/jwt-auth : https://blog.logrocket.com/implementing-jwt-authentication-laravel-9/
+
+------------------------------------------------------------
+In lỗi ra thì chỉ cần thêm dòng này : 
+    @if ($errors->has('name'))  // kiểm tra nếu có lỗi 'name' trong $errors thì in lỗi ra 
+        <span class="text-danger ml-3">{{ $errors->first('name') }}</span>
+    @endif
+
+Tương tự : 
+    @if ($errors->has('g-recaptcha-response'))
+    <span
+        class="text-danger ml-3">{{ $errors->first('g-recaptcha-response') }}</span>
+    @endif
+
+Với name và g-recaptcha-response là tên các tham số truyền vào request khi submit form.
+Ta có :
+    intern-php\app\Http\Requests\RequestUpdateInfor.php : có đoạn code :        
+        return [
+            'name' => ['required', new Uppercase],
+            'username' => 'required|unique:users,username,' . Auth::user()->id,
+            'email' => 'required|email|unique:users,email,' . Auth::user()->id,
+            'gender' => 'required',
+        ];
+    
+    => khi duyệt qua request validate thì tên (name) của tham số nào lỗi không đúng yêu cầu khi submit form 
+    thì nó sẽ được lưu vào biến lớn nhất là biến $errors
+
+------------------------------------------------------------    
+Nếu route được ghi như thế này thì có thể link đến được hàm đó : 
+    Route::post('/delete/{id}', [ArticleController::class, 'deleteArticleAdmin'])->name('delete');
+    => Nhấn giữ ctrl + click vào deleteArticleAdmin thì ta sẽ link đến được  
+
+------------------------------------------------------------  
+Nếu dùng nhiều hơn một auth , ví dụ dùng cả user và admin thì không được dùng 
+    Session::flush(); , vì nó sẽ xóa sạch toàn bộ session => đăng xuất cả user và admin . 
+    Chỉ nên dùng Auth::guard('user')->logout(); . 
+
+------------------------------------------------------------  
+
++ Mutiple Authentication trong Laravel Web (Không phải API)
+    + Ta đã làm được Mutiple Authentication trong Laravel API JWT 
+    + Bây giờ làm trong Web : https://www.regur.net/blog/multiple-authentication-in-laravel/
+
++ Cách làm : 
+    + php artisan make:model Admin -m -c 
+
++ intern-php\config\auth.php 
+    <?php
+        return [
+
+            
+            'defaults' => [
+                'guard' => 'web',
+                'passwords' => 'users',
+            ],
+
+
+            'guards' => [
+                'web' => [
+                    'driver' => 'session',
+                    'provider' => 'users',
+                ],
+                'admin' => [
+                    'driver' => 'session',
+                    'provider' => 'admins',
+                ],
+                'user' => [
+                    'driver' => 'session',
+                    'provider' => 'users',
+                ],
+            ],
+
+            'providers' => [
+                'users' => [
+                    'driver' => 'eloquent',
+                    'model' => App\Models\User::class,
+                ],
+                'admins' => [
+                    'driver' => 'eloquent',
+                    'model' => App\Models\Admin::class,
+                ],
+            ],
+
+            'passwords' => [
+                'users' => [
+                    'provider' => 'users',
+                    'table' => 'password_resets',
+                    'expire' => 60,
+                    'throttle' => 60,
+                ],
+            ],
+
+            'password_timeout' => 10800,
+
+        ];
+
++ intern-php\app\Models\Admin.php
+    <?php
+
+        namespace App\Models;
+        
+        use Illuminate\Database\Eloquent\Factories\HasFactory;
+        use Illuminate\Foundation\Auth\User as Authenticatable;
+        use Illuminate\Notifications\Notifiable;
+        use Laravel\Sanctum\HasApiTokens;
+        
+        class Admin extends Authenticatable
+        {
+            use HasApiTokens;
+            use HasFactory;
+            use Notifiable;
+        
+            protected $guard = 'admin';
+        
+            protected $fillable = ['name', 'email', 'password', 'role', 'avatar'];
+        
+            protected $hidden = ['password', 'remember_token'];
+        }
+
+    => Quan trọng là extends Authenticatable
+        
++ Còn lại mọi thứ đều giống bình thường, không có gì cả . 
+
++ Sử dụng : 
+    + Ở file web.php : 
+        + Nếu lúc trước sử dụng : 
+            Route::middleware(['auth'])->group(function () { 
+
+        + Thì bây giờ phân chia ra rồi sẽ là : 
+            Route::middleware(['auth:user'])->group(function () {
+            Route::middleware(['auth:admin'])->group(function () {
+
+    + Ở code Blade : 
+        + Lúc trước : 
+            @if($article->id_user == auth()->user()->id) 
+
+        + Bây giờ : 
+            @if($article->id_user == auth()->guard('user')->user()->id) 
+            @if($article->id_user == auth()->guard('admin')->user()->id) 
+
+    + Code Login (Controller, Service, Model,...)
+        + Lúc trước : 
+            Auth::user()
+
+        + Bây giờ : 
+            Auth::guard('user')->check()
+            Auth::guard('admin')->check()
+
+    + Các câu lệnh khác dùng auth , hay Auth để lấy id hay check hay login các thứ ,... đều tương tự .  
+            Auth::guard('admin')->attempt($credentials)
+            Auth::guard('admin')->logout();
+
+            Auth::guard('user')->attempt($credentials)
+            Auth::guard('user')->logout();
+
+    => Tóm lại cho dễ hiểu là mọi thứ đều hoàn toàn giống như trước có đều trước mỗi auth() 
+    hay Auth() thì đầu tiên ta phải bổ sung thêm vào : guard('user') hoặc guard('admin')
+
+
+    + Code : 
+        web.php  
+        <?php
+
+            // Blog
+            Route::prefix('blog')->controller(ArticleController::class)->name('blog.')->group(function () {
+                Route::middleware(['auth:user'])->group(function () {
+
+                                ...
+                    Route::get('/add', 'showAdd')->name('add');
+                    Route::get('/detail/{id}', 'showDetail')->name('show');
+                                ...
+
+                });
+            });
+
+            // Infor
+            Route::prefix('infor')->controller(UserController::class)->name('infor.')->group(function () {
+                Route::middleware(['auth:user'])->group(function () {
+                                ...
+                    Route::post('/change-password', 'changePassword')->name('change_password');
+                                ...
+                });
+            });
+
+            // Main
+            Route::prefix('main')->controller(CommentController::class)->name('main.')->group(function () {
+                                ...
+                Route::get('/personal-page/{id_user}', 'personalPage')->name('personal_page');
+                                ...
+            });
+
+            // Admin
+            Route::prefix('admin')->controller(AdminController::class)->name('admin.')->group(function () {
+                Route::get('/login', 'login')->name('login');
+                Route::post('/admin-login', 'adminLogin')->name('post_login');
+                Route::post('/admin-register', 'adminRegister')->name('post_register');
+
+                // Forgot Password
+                Route::post('forgot-pw-sendcode', 'forgotSend')->name('forgot_sendcode');
+                Route::get('/forgot-form', 'forgotForm');
+                Route::post('forgot-update', 'forgotUpdate')->name('forgot_update');
+
+                Route::middleware(['auth:admin'])->group(function () {
+                                ...
+                    Route::get('/comment', [CommentController::class, 'allCommentAdmin'])->name('comment');
+                    Route::get('/ajax-search-cmt-admin', [CommentController::class, 'ajaxSearchCmtAdmin'])->name('search_comment');
+                    Route::post('/delete-cmt/{id}', [CommentController::class, 'deleteCommentAdmin'])->name('delete_comment');
+
+                    Route::get('/all-admin', 'allAdmin')->name('all_admin');
+                    Route::get('/add-admin', 'addAdmin')->name('add_admin');
+                    Route::get('/change-role', 'changeRole')->name('change_role');
+                                ...
+
+                });
+            });
+
+------------------------------------------------------------  
++ Một số chức năng khác mà mình có làm trong project là : 
+    + Tạo seeder cho Admin , vì admin không register như bình thường nên 
+    nếu làm dự án cho người khác thì ta phải tạo seeder để có tài khoản đầu tiên . 
+    + Sau đó dùng tài khoản này để add các toàn khoản khác . 
+
++ Chức năng quên mật khẩu mình thêm cột is_user để có thể dùng cho cả User và Admin 
++ Còn lại thì là ajax và một số thứ khác chứ không có gì mới 
+------------------------------------------------------------  
