@@ -2431,7 +2431,432 @@ Cách làm :
         + Mở sẵn hàng đợi queue : php artisan queue:work (để chờ các job đến từ lệnh command schedule) 
         + Mỗi lần đến giờ lệnh task schedule sẽ được chạy sau đó jobs được thêm vào database sau đó job được thực hiện . 
 
+=> Sau này các lệnh : php artisan serve hay php artisan queue:work cũng có thể thay được tự động thực hiện bằng Task Scheduler cũng được . 
 Nói thêm : 
     + Mở bằng command line thường và dùng lệnh : C:\laragon\www\intern-php>php artisan users:sendreminder vẫn được . 
     + Command line chứa : php artisan queue:work trong laragon vẫn nhận . 
 ------------------------------------------------------------  
+Chỉnh giờ cho toàn bộ project : 
+    + intern-php\config\app.php : 
+        'timezone' => 'Asia/Ho_Chi_Minh',
+
+------------------------------------------------------------  
+Github : 
+    + https://github.com/NguyenVanManh-AI/LearningLaravel9 (Blog Web) 
+        + Local : C:\Users\ADMIN\Downloads\ProLaravel\LearningLaravel9
+
+    + https://github.com/NguyenVanManh-AI/laravel9api_github (API)
+        + Local : C:\laragon\www\laravel9api_github
+
+Gitlab : 
+    + https://gitlab-new.bap.jp/cuongpnv/intern-php/-/tree/tasks/ManhNV/Laravel-learning (Blog Web)
+        + Local : C:\laragon\www\intern-php
+
+    + (API)
+        + Local : C:\laragon\www\laravel9api 
+
+Ngoài (BAP.html) : 
+    + Local : C:\laragon\www\bloglaravel
+    + https://github.com/NguyenVanManh-AI/bap-bloglaravel
+
+
+
+
+    
+------------------------------------------------------------  
+API 
+    + Tham số page truyền vào body hay header đều được 
+        {
+            "search" : "lap",
+            "page" : 2
+        }
+
+        hoặc ...?page=2 
+
+    => Thì laravel đều hiểu đây là page 2 . 
+
+------------------------------------------------------------  
+Realtime Chat by Pusher 
+Tham khảo : 
+    + https://www.youtube.com/watch?v=ER-wOKXrbuw&t=1s
+    + https://bitbucket.org/rossedlin/chat-laravel-pusher/src/youtube/
+    + https://github.com/NguyenVanManh-AI/chat-laravel-pusher
+    + Key : https://dashboard.pusher.com/apps/1666835/keys 
+
+Note : 
+    + Làm theo hoàn toàn như video là được 
+    + Nhưng chú ý là video có sử dụng Queue (loại thường : sync) . Còn nếu ta sử dụng Queue với drive là database thì 
+    dùng lệnh : php artisan queue:work để bật queue lên . 
+
+Cách làm : 
+
+    + Tạo key pusher 
+        + Vào : https://dashboard.pusher.com/
+        + Ở phần Channels click vào Manage 
+        + Click vào Create app 
+        + Ở phần Select a cluster chọn 'eu (EU (Ireland))'
+        + Click chọn Create app 
+        + Sau khi app được tạo => click vào App keys ta sẽ được : 
+            app_id = "1666835"
+            key = "b60bd100db57d4ba49c1"
+            secret = "5f8134171fd3b1a71eb5"
+            cluster = "eu"
+
+            => đây là toàn bộ thông tin của app 
+
+    + intern-php\.env
+        BROADCAST_DRIVER=pusher
+
+        PUSHER_APP_ID=1666835
+        PUSHER_APP_KEY=b60bd100db57d4ba49c1
+        PUSHER_APP_SECRET=5f8134171fd3b1a71eb5
+        PUSHER_HOST=
+        PUSHER_PORT=443
+        PUSHER_SCHEME=https
+        PUSHER_APP_CLUSTER=eu
+        
+        VITE_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
+        VITE_PUSHER_HOST="${PUSHER_HOST}"
+        VITE_PUSHER_PORT="${PUSHER_PORT}"
+        VITE_PUSHER_SCHEME="${PUSHER_SCHEME}"
+        VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
+
+    + php artisan make:event PusherBroadcast 
+    + intern-php\app\Events\PusherBroadcast.php : 
+        <?php
+
+            namespace App\Events;
+            
+            use Illuminate\Broadcasting\Channel;
+            use Illuminate\Broadcasting\InteractsWithSockets;
+            use Illuminate\Broadcasting\PresenceChannel;
+            use Illuminate\Broadcasting\PrivateChannel;
+            use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+            use Illuminate\Foundation\Events\Dispatchable;
+            use Illuminate\Queue\SerializesModels;
+            
+            class PusherBroadcast implements ShouldBroadcast
+            {
+                use Dispatchable, InteractsWithSockets, SerializesModels;
+            
+                public string $message;
+            
+                public function __construct(string $message)
+                {
+                    $this->message = $message;
+                }
+            
+                public function broadcastOn(): array
+                {
+                    return ['public'];
+                }
+            
+                public function broadcastAs(): string
+                {
+                    return 'chat';
+                }
+            }
+
+    + intern-php\app\Http\Controllers\PusherController.php : 
+        <?php
+
+            namespace App\Http\Controllers;
+
+            use App\Events\PusherBroadcast;
+            use Illuminate\Contracts\Foundation\Application;
+            use Illuminate\Contracts\View\Factory;
+            use Illuminate\Contracts\View\View;
+            use Illuminate\Http\Request;
+
+            class PusherController extends Controller
+            {
+                public function index()
+                {
+                    return view('index');
+                }
+
+                public function broadcast(Request $request)
+                {
+                    broadcast(new PusherBroadcast($request->get('message')))->toOthers();
+
+                    return view('broadcast', ['message' => $request->get('message')]);
+                }
+
+                public function receive(Request $request)
+                {
+                    return view('receive', ['message' => $request->get('message')]);
+                }
+            }
+
+    + intern-php\routes\web.php
+        Route::get('/', 'App\Http\Controllers\PusherController@index');
+        Route::post('/broadcast', 'App\Http\Controllers\PusherController@broadcast');
+        Route::post('/receive', 'App\Http\Controllers\PusherController@receive');
+
+    + intern-php\resources\views\index.blade.php : 
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+        <title>Chat Laravel Pusher | Edlin App</title>
+        <link rel="icon" href="https://assets.edlin.app/favicon/favicon.ico"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- JavaScript -->
+        <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+        <!-- End JavaScript -->
+        <!-- CSS -->
+            <link rel="stylesheet" href="{{ asset('chat/style.css') }}">
+        <!-- End CSS -->
+        </head>
+        <body>
+        <div class="chat">
+        <!-- Header -->
+        <div class="top">
+            <img src="https://assets.edlin.app/images/rossedlin/03/rossedlin-03-100.jpg" alt="Avatar">
+            <div>
+            <p>Ross Edlin</p>
+            <small>Online</small>
+            </div>
+        </div>
+        <!-- End Header -->
+        <!-- Chat -->
+        <div class="messages">
+            @include('receive', ['message' => "Hey! What's up!  👋"])
+            @include('receive', ['message' => "Ask a friend to open this link and you can chat with them!"])
+        </div>
+        <!-- End Chat -->
+        <!-- Footer -->
+        <div class="bottom">
+            <form>
+            <input type="text" id="message" name="message" placeholder="Enter message..." autocomplete="off">
+            <button type="submit"></button>
+            </form>
+        </div>
+        <!-- End Footer -->
+        </div>
+        </body>
+        <script>
+        const pusher  = new Pusher('{{config('broadcasting.connections.pusher.key')}}', {cluster: 'eu'});
+        const channel = pusher.subscribe('public');
+        //Receive messages
+        channel.bind('chat', function (data) {
+            $.post("/receive", {
+            _token:  '{{csrf_token()}}',
+            message: data.message,
+            })
+            .done(function (res) {
+            $(".messages > .message").last().after(res);
+            $(document).scrollTop($(document).height());
+            });
+        });
+        //Broadcast messages
+        $("form").submit(function (event) {
+            event.preventDefault();
+
+            $.ajax({
+            url:     "/broadcast",
+            method:  'POST',
+            headers: {
+                'X-Socket-Id': pusher.connection.socket_id
+            },
+            data:    {
+                _token:  '{{csrf_token()}}',
+                message: $("form #message").val(),
+            }
+            }).done(function (res) {
+            $(".messages > .message").last().after(res);
+            $("form #message").val('');
+            $(document).scrollTop($(document).height());
+            });
+        });
+        </script>
+        </html>
+
+    + intern-php\resources\views\broadcast.blade.php : 
+        <div class="right message">
+            <p>{{$message}}</p>
+            <img src="https://assets.edlin.app/images/rossedlin/03/rossedlin-03-100.jpg" alt="Profile picture">
+        </div>
+      
+    + intern-php\resources\views\receive.blade.php : 
+        <div class="left message">
+            <img src="https://assets.edlin.app/images/rossedlin/03/rossedlin-03-100.jpg" alt="Avatar">
+            <p>{{$message}}</p>
+        </div>
+      
+    + Một số file css khác : C:\laragon\www\intern-php\public\chat (Tới ngang đây là xong rồi , nhưng nếu nó lỗi gì thì thêm các file dưới đây)
+    + Một số file khác : 
+        intern-php\config\broadcasting.php : 
+            <?php
+                return [
+                    'default' => env('BROADCAST_DRIVER', 'null'),
+                    'connections' => [
+                        'pusher' => [
+                            'driver' => 'pusher',
+                            'key' => env('PUSHER_APP_KEY'),
+                            'secret' => env('PUSHER_APP_SECRET'),
+                            'app_id' => env('PUSHER_APP_ID'),
+                            'options' => [
+                                'host' => env('PUSHER_HOST', 'api-'.env('PUSHER_APP_CLUSTER', 'mt1').'.pusher.com') ?: 'api-'.env('PUSHER_APP_CLUSTER', 'mt1').'.pusher.com',
+                                'port' => env('PUSHER_PORT', 443),
+                                'scheme' => env('PUSHER_SCHEME', 'https'),
+                                'encrypted' => true,
+                                'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
+                            ],
+                            'client_options' => [
+                                // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+                            ],
+                        ],
+                        'ably' => [
+                            'driver' => 'ably',
+                            'key' => env('ABLY_KEY'),
+                        ],
+                        'redis' => [
+                            'driver' => 'redis',
+                            'connection' => 'default',
+                        ],
+                        'log' => [
+                            'driver' => 'log',
+                        ],
+                        'null' => [
+                            'driver' => 'null',
+                        ],
+                    ],
+                ];
+
+        + intern-php\config\pusher.php : 
+            <?php
+                return [
+                    'app'     => [
+                        'id'     => env('PUSHER_APP_ID'),
+                        'key'    => env('PUSHER_APP_KEY'),
+                        'secret' => env('PUSHER_APP_SECRET'),
+                    ],
+                    'channel' => 'public',
+                    'event'   => 'chat',
+                ];
+
+        + intern-php\composer.json
+            {
+                "name": "laravel/laravel",
+                "type": "project",
+                "description": "The Laravel Framework.",
+                "keywords": ["framework", "laravel"],
+                "license": "MIT",
+                "require": {
+                    "php": "^8.0.2",
+                    "brian2694/laravel-toastr": "^5.57",
+                    "doctrine/dbal": "^3.6",
+                    "fideloper/proxy": "^4.2",
+                    "fruitcake/laravel-cors": "^2.0.5",
+                    "guzzlehttp/guzzle": "^7.2",
+                    "laravel/framework": "^9.0",
+                    "laravel/sanctum": "^2.14",
+                    "laravel/socialite": "^5.6",
+                    "laravel/tinker": "^2.7",
+                    "pusher/pusher-php-server": "^7.2",
+                    "sentry/sentry-laravel": "3.2.0",
+                    "socialiteproviders/github": "^4.1",
+                    "socialiteproviders/google": "^4.1",
+                    "socialiteproviders/twitter": "^4.1"
+                },
+                "require-dev": {
+                    "barryvdh/laravel-debugbar": "^3.8",
+                    "brainmaestro/composer-git-hooks": "*",
+                    "fakerphp/faker": "^1.9.1",
+                    "laravel/pint": "^1.11",
+                    "laravel/sail": "^1.0.1",
+                    "mockery/mockery": "^1.4.4",
+                    "nunomaduro/collision": "^6.1",
+                    "phpunit/phpunit": "^9.5.10",
+                    "spatie/laravel-ignition": "^1.0"
+                },
+                "autoload": {
+                    "psr-4": {
+                        "App\\": "app/",
+                        "Database\\Factories\\": "database/factories/",
+                        "Database\\Seeders\\": "database/seeders/"
+                    },
+                    "files": [
+                        "app/Helpers/Common.php"
+                    ]
+                },
+                "autoload-dev": {
+                    "psr-4": {
+                        "Tests\\": "tests/"
+                    }
+                },
+                "scripts": {
+                    "post-install-cmd": "vendor/bin/cghooks add --ignore-lock",
+                    "post-autoload-dump": [
+                        "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+                        "@php artisan package:discover --ansi"
+                    ],
+                    "post-update-cmd": [
+                        "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+                        "vendor/bin/cghooks update"
+                    ],
+                    "post-root-package-install": [
+                        "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+                    ],
+                    "post-create-project-cmd": [
+                        "@php artisan key:generate --ansi"
+                    ],
+                    "analyze":  "vendor/bin/pint --test",
+                    "fix-format": "vendor/bin/pint"
+                },
+                "extra": {
+                    "hooks": {
+                        "config": {
+                            "stop-on-failure": [
+                                "pre-commit"
+                            ]
+                        },
+                        "pre-commit": [
+                            "vendor/bin/pint --test"
+                        ]
+                    },
+                    "laravel": {
+                        "dont-discover": []
+                    }
+                },
+                "config": {
+                    "optimize-autoloader": true,
+                    "preferred-install": "dist",
+                    "sort-packages": true,
+                    "allow-plugins": {
+                        "php-http/discovery": true
+                    }
+                },
+                "minimum-stability": "dev",
+                "prefer-stable": true
+            }
+            
+        + intern-php\package.json : 
+            {
+                "private": true,
+                "scripts": {
+                    "dev": "npm run development",
+                    "development": "mix",
+                    "watch": "mix watch",
+                    "watch-poll": "mix watch -- --watch-options-poll=1000",
+                    "hot": "mix watch --hot",
+                    "prod": "npm run production",
+                    "production": "mix --production"
+                },
+                "devDependencies": {
+                    "axios": "^0.25",
+                    "laravel-mix": "^6.0.6",
+                    "lodash": "^4.17.19",
+                    "postcss": "^8.1.14"
+                },
+                "dependencies": {
+                    "font-awesome": "4.7.0",
+                    "bootstrap": "^4.0.0",
+                    "jquery": "^3.7.0"
+                }
+            }
+
+XONG !
+------------------------------------------------------------  
+            
