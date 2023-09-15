@@ -2488,6 +2488,9 @@ Note :
     + Nhưng chú ý là video có sử dụng Queue (loại thường : sync) . Còn nếu ta sử dụng Queue với drive là database thì 
     dùng lệnh : php artisan queue:work để bật queue lên . 
 
+    + Lưu ý : Việc gửi và nhận nó chỉ có tác dụng trên 2 tab hoặc 2 cửa sổ trình duyệt . 
+        => Mở duy nhất một tab thì gửi chứ nó không nhận về gì cả . 
+
 Cách làm : 
 
     + Tạo key pusher 
@@ -2859,4 +2862,181 @@ Cách làm :
 
 XONG !
 ------------------------------------------------------------  
-            
+Để đổ dữ liệu từ controller vào blade trong Laravel để tạo biểu đồ, bạn cần thực hiện các bước sau:
+
+Bước 1: Trong controller của bạn, tính toán dữ liệu mà bạn muốn sử dụng trong biểu đồ và gán chúng vào một biến.
+
+Ví dụ:
+
+$labels = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        $yearlyStats = DB::table('articles')
+            ->select(DB::raw('MONTH(created_at) as month'), DB::raw('COUNT(*) as count'))
+            ->whereBetween('created_at', [$startDateOfYear, $endDateOfYear])
+            ->groupBy('month')
+            ->get();
+        $monthlyCounts = array_fill_keys($labels, 0);
+        foreach ($yearlyStats as $stat) {
+            $monthName = date("F", mktime(0, 0, 0, $stat->month, 1));
+            $monthlyCounts[$monthName] = $stat->count;
+        }
+        $label_year = 'Statistics on the number of articles by year';
+        // $labels = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        // $labels = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        $data = $monthlyCounts;
+        return view('admin.manage.statistical', ['label_year' => $label_year , 'labels' => $labels, 'data' => $data , 'title' => $this->getTitle('Statistical', 'Statistical Detail')]);
+        
+Bước 2: Trong blade view của bạn (trong trường hợp này là admin.your-blade-view), sử dụng dữ liệu được chuyển từ controller để cung cấp dữ liệu cho biểu đồ.
+
+@extends('admin.layouts.view_content')
+@section('content-blog')
+<link rel="stylesheet" href="{{ asset('admin/css/statistical.css') }}">
+
+<div class="col-12 mx-auto" id="index_statistical">
+    <div>
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const ctx = document.getElementById('myChart');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: @json($labels), // Chuyển mảng labels thành JSON
+                datasets: [{
+                    label: @json($label_year),
+                    data: @json($data), // Chuyển mảng data thành JSON
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</div>
+@endsection
+
+Lưu ý rằng trong ví dụ trên, chúng ta đã sử dụng hàm @json để chuyển mảng PHP thành dạng JSON để sử dụng trong biểu đồ. Điều này đảm bảo rằng dữ liệu được truyền đúng định dạng cho biểu đồ Chart.js.
+
+Bây giờ, khi bạn gọi route tương ứng với action index của controller, biểu đồ sẽ hiển thị dựa trên dữ liệu được tính toán từ controller.
+------------------------------------------------------------  
+fix lỗi font-awesome chỉ hiện ở một cửa sổ : <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+------------------------------------------------------------  
+Trong './intern-php/resources/views' Đã replace 
+    'http://localhost:8000/' 
+    
+                bằng 
+
+    \App\Enums\UserEnum::DOMAIN_PATH
+
+Nếu có lỗi gì về hiển thị hình ảnh thì replcae lại thôi . 
+------------------------------------------------------------  
+Trong file : C:\laragon\www\intern-php\app\Enums\UserEnum.php : 
+// public const DOMAIN_PATH = 'http://localhost:8000/';
+public const DOMAIN_PATH = 'http://192.168.11.195:8000/';
+
+=> nếu không chạy ip thì bỏ comment cái trên còn nếu chạy ip thì để cái dưới và check xem ip 
+ipconfig và chọn : IPv4 Address. . . . . . . . . . . : 192.168.11.195
+
+
+Nếu chạy bằng ip thì tắt reCapTcha đi , đăng nhập bằng google cũng không được vì nó được đăng kí trên Google API 
+là localhost chứ không phải là ip hay cái gì cả 
+Chính vì thế muốn đăng nhập bằng google thì không chạy bằng ip , trong file service ta cũng không được đổi lại thành : 
+
+'google' => [
+    'client_id' => '1079359168744-ehm0qmfgmg4imvbk33n7d97t69sfjb87.apps.googleusercontent.com',
+    'client_secret' => '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',
+    'redirect' => UserEnum::DOMAIN_PATH . 'authorized/google/callback',
+],
+'github' => [
+    'client_id' => 'b1b1f3e7c5765cfd3510',
+    'client_secret' => '48474a596ae636bba226c9b0f704221f2fcc3bb7',
+    'redirect' => UserEnum::DOMAIN_PATH . 'authorized/github/callback',
+],
+=> Vì như đã nói , nó sẽ khác với cái url đã đăng kí trên API . 
+------------------------------------------------------------  
++ Chiều dài scroll của các khung chat là khác nhau => hoặc là cho cuộn xuống rất lớn 999999 => xem như mất đi animation 
+=> hoặc là cho cuộn theo chiều dài của khung chat => nhưng sẽ có lúc lỗi và lúc không lỗi (giật scroll) . 
+=> tốt nhất chỉ cho animation lúc vừa mới vào khung chat 
+------------------------------------------------------------  
+Giả sử ta có : http://localhost:8000/main/personal-page/1 (file personal_page.blade.php)
+    + Nếu ta ghi 
+        <a href="chat/user/{{$personal->id}}">
+            <span><i class="fa-brands fa-facebook-messenger"></i></span>
+            Text Me
+        </a>
+        => thì nó sẽ cộng dồn url trên trang web và chat/user/{{$personal->id}} 
+        thành : http://localhost:8000/main/personal-page/chat/user/1
+
+    + Nếu ta ghi 
+        <a href="/chat/user/{{$personal->id}}">
+            <span><i class="fa-brands fa-facebook-messenger"></i></span>
+            Text Me
+        </a>
+        => sẽ thành : http://localhost:8000/chat/user/1
+
+    => cái nào cũng dùng được , tùy trường hợp mà nên dùng cái nào 
+    => ví dụ đang ở .../user 
+    => thì href ta chỉ cần để href="1" => là nó tự chuyển đến .../user/1 
+------------------------------------------------------------  
+[Buổi sau thứ 3 => VIẾT NỘI DUNG CẦN THUYẾT TRÌNH TRƯỚC KHI TRÌNH BÀY cho nó đầy đủ]
+
+Task làm thêm : 
+    + Thêm ẩn hiện comment 
+    + Thêm ẩn hiện bài viết 
+
++ Thêm Caching và fix lỗi paginate không hoạt động của nó . 
++ Xem tối ưu code Service được không => sử dụng các hàm trong file BaseService 
++ Clone dashboard 
++ Thêm facebook comment plugins 
+
+----------------------------------------------------------------------------------
++ Viết api 
+    + JSON Product  
++ Xem thêm reatime database => lưu các thông báo trên data của thư viện chứ không phải là lưu trong database của mình 
+----------------------------------------------------------------------------------
+git config --list
+
+----------------------------------------------------------------------------------
+Như này là khai báo một array 
+    $input = [
+        'search' => $request->search,
+        'role' => $request->role,
+        'per_page' => $request->per_page,
+    ];
+
+Còn dưới đây là chuyển một array sang object 
+    $input = (object) [
+        'search' => $request->search,
+        'role' => $request->role,
+        'per_page' => $request->per_page,
+    ];
+
+----------------------------------------------------------------------------------
+Với Laravel thì chỉ cần gửi param ?page=1 vào request thì nó tự động hiểu được ta cần đến page nào . 
+
+----------------------------------------------------------------------------------
+Đổi tên nhánh : Ở cả local và origin (gitlab)
+
+C:\laragon\www\intern-php(tasks/ManhNV/Laravel-learning -> origin)   <= đang ở nhánh cũ 
+λ git branch -m tasks/ManhNV/Laravel-Project-Final <= tên nhánh mới 
+
+C:\laragon\www\intern-php(tasks/ManhNV/Laravel-Project-Final -> origin)
+λ git push origin tasks/ManhNV/Laravel-Project-Final <= push lên tên nhánh mới để tạo nhánh mới trên origin 
+
+=> Xong 
+=> Việc này nó sẽ tạo ra một nhánh mới trên origin => ta sẽ lên đó để tạo merge request mới 
+=> Điều đặc biệt là nó sẽ giữ lại toàn bộ lịch sử bao gồm các commit,... cho ta trên gitlab 
+
+----------------------------------------------------------------------------------
