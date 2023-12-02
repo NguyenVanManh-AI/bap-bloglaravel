@@ -1,3 +1,6 @@
+
+https://bapjsc-my.sharepoint.com/personal/cuongpnv_bap_jp/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fcuongpnv%5Fbap%5Fjp%2FDocuments%2F%5BIntern%5D%20Fullstack%20PHP%20%2D%20ReactJS&ct=1691652435368&or=Teams%2DHL&ga=1&OR=Teams%2DHL&CT=1695636879459&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiIyNy8yMzA5MDExMjIyOSIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D
+
 - Template có sẵn : https://adminlte.io/themes/v3/pages/UI/general.html# - Cài Laragon ( cài tất cả các phiên bản laravel xem có bị lỗi gì không) + https://laragon.org/docs/install.html + README.md MySQL login*: user: root password: *The default username
 is 'root' and empty password ---------------------------------------------------- Document Root: C:\laragon\www ---------------------------------------------------- Hotkey to open Terminal globally: CTRL+ALT+T For more information, please visit: http://laragon.org
 Thank you for using Laragon. leokhoa@gmail.com + Hoàn toàn giống Xampp chỉ là nó có thể thay đổi phiên bản thôi + Trang chủ : http://localhost/ + Mysql database cũng tương tự + -----------------------------Service----------------------- Service Bạn đang
@@ -2459,7 +2462,10 @@ Ngoài (BAP.html) :
     + Local : C:\laragon\www\bloglaravel
     + https://github.com/NguyenVanManh-AI/bap-bloglaravel
 
-
+    
+ReactJS : 
+    + Local : C:\Users\ADMIN\Downloads\ReactJS
+    + https://github.com/NguyenVanManh-AI/ReactJS
 
 
     
@@ -3039,4 +3045,31 @@ C:\laragon\www\intern-php(tasks/ManhNV/Laravel-Project-Final -> origin)
 => Việc này nó sẽ tạo ra một nhánh mới trên origin => ta sẽ lên đó để tạo merge request mới 
 => Điều đặc biệt là nó sẽ giữ lại toàn bộ lịch sử bao gồm các commit,... cho ta trên gitlab 
 
-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------
+Docker
++ docker pull mysql:8.0
++ C:\Users\ADMIN>docker images
+    REPOSITORY                                 TAG       IMAGE ID       CREATED        SIZE
+    mysql                                      8.0       8ca55c632ed6   22 hours ago   577MB
+    ambassador/telepresence-docker-extension   1.0.9     829a500cb0ad   3 months ago   531MB
+    ambassador/telepresence-docker-runtime     1.0.9     3a0d378b0ab9   3 months ago   21.3MB
+    lpp_mspstatusweb                           latest    f8cbba052348   3 months ago   1.98GB
+    hello-world                                latest    9c7a54a9a43c   4 months ago   13.3kB
+    nginx/docker-extension                     0.0.3     41d3d0d7d940   5 months ago   7.53MB
+    lpp_mspstatusdb                            latest    15b7cc87bdc3   5 months ago   455MB
+    nginx                                      latest    3f8a00f137a0   7 months ago   142MB
+    mysql                                      5.7       be16cf2d832a   7 months ago   455MB
+    docker/getting-started                     latest    3e4394f6b72f   8 months ago   47MB
+    node                                       9.5.0     75a1d3c86544   5 years ago    676MB
+
++ docker run -d -p 3309:3306 -e MYSQL_ROOT_PASSWORD=vanmanhit1 8ca55c632ed6
+a55e5b51dd1307aa6810a6ca0d235d11d76783d56ec24078deac37acb3950697  <= nó hiện ra một chuỗi như này là ok 
+
+=> Connect với để thao tác với Mysql của Docker (Connect bằng 'Mysql của Vscode' hoặc 'HeidiSQL' hoặc 'SQL workbench' ,... hoặc bất kì cái gì cũng được)
+    + port : 3309 
+    + password : vanmanhit1 
+    + hostname/IP : 127.0.0.1 
+
+=> Sau khi đã connect xong thì vào tạo database và dùng bình thường thôi 
+
+-----------------------------------------------------------------------------------------------------
